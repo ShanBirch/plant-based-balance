@@ -655,6 +655,8 @@ html.pbb-coached-month .nav-item[aria-label="Course"],
 html.pbb-coached-month #view-learning,
 html.pbb-coached-month #social-journey-card { display:none!important; }
 </style>
+<link rel="stylesheet" href="css/dashboard/pbb-coaching-support.css?v=20261101-v1">
+<script defer src="js/dashboard/pbb-coaching-support.js?v=20261101-v1"></script>
 </head>
 <body>
 <script>if(window._crumb)window._crumb('body_start');</script>
@@ -12553,6 +12555,13 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
                 </div>
             </section>
 
+            <section id="settings-coaching-support-section" class="settings-v2-section" aria-labelledby="settings-support-title" hidden>
+                <h3 id="settings-support-title">Coaching support</h3>
+                <div class="settings-v2-card">
+                    <button id="settings-coaching-support" type="button" class="settings-v2-row" onclick="BalanceCoachingSupport.openSettings()"><span class="settings-v2-icon" aria-hidden="true">♡</span><span class="settings-v2-copy"><strong>Your support choices</strong><small>Optional messages and coaching tone</small></span><span class="settings-v2-chevron" aria-hidden="true">›</span></button>
+                    <div id="settings-coaching-support-editor" hidden><div data-support-mount="support-settings"></div><button type="button" class="settings-v2-pill" onclick="BalanceCoachingSupport.save('support-settings','app_settings')">Save support choices</button></div>
+                </div>
+            </section>
             <section class="settings-v2-section" aria-labelledby="settings-experience-title">
                 <h3 id="settings-experience-title">Your experience</h3>
                 <div class="settings-v2-card">
@@ -13000,7 +13009,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261029-timed-workout-target-v1&cohort_diets=1&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261101-coaching-support-v1&cohort_diets=1&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13042,7 +13051,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261029-timed-workout-target-v1&cohort_diets=1&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261101-coaching-support-v1&cohort_diets=1&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13061,7 +13070,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261029-timed-workout-target-v1"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261101-coaching-support-v1"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=18-workout-messages"></script>
@@ -14169,6 +14178,7 @@ if(!window._pbbIsIOSSafari) {
   }
 
   const steps = [
+    { tab:'profile', sel:'#settings-coaching-support', condition:()=>window.BalanceCoachingSupport?.isEligible()===true, title:'Support that suits you', body:'Choose optional morning messages on saved training days, after-session check-ins, and a gentle or firmer tone. Both switches start off. Weekly check-ins remain; change your choices anytime.' },
     {tab:'home',sel:'.header-msg-icon',title:'Your check-in, with a clear next step',body:'When Shannon attaches a weekly progress card to your check-in, open View progress beneath his text or voice note. See that week’s recorded sets and your reviewed next targets inside Balance.'},
     { tab:'learning', sel:'#learning-content', title:'Send Master videos through your usual chat', body:'In Master Week 2, send your squat, hinge, push and pull clips to Shannon on Instagram or your usual messaging platform. Record where and when you sent each clip, then save it in the course.' },
     {tab:'learning',sel:'#learning-content',title:'Learn at a steadier pace',body:'Balance Learn now has ten weeks, with six lessons in Week 1 and four or five in later weeks. Read the lessons, answer the quizzes and continue at your pace. Practical course tasks are paused, and your completed lessons still count.'},
@@ -14195,6 +14205,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#post-workout-share-btn', fallbackSel:'#activity-share-photo-btn,#nutrition-share-photo-btn', title:'Design your photo share', fallbackTitle:'Design your photo share', body:'Pinch or drag the photo, move the workout details, add text or stickers, and choose a layout and colour. Feed and IG Story stay ready until you tap Done.', fallbackBody:'Add a photo after a workout, activity, or meal to open the full-screen editor before sharing.', quick:true, condition:function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); } },
     { tab:'dashboard', sel:'#dm-voice-btn', fallbackSel:'.header-msg-icon', title:'Send a voice message', fallbackTitle:'Voice messages are in your DMs', body:'Tap the microphone, record your message, then tap send. You can cancel before it leaves.', fallbackBody:'Open Messages, choose a friend, then tap the microphone beside the message box.', action: async function(){ try { var coachId=window._coachUserId || (typeof getCoachUserId==='function' ? await getCoachUserId() : null); if(coachId && typeof openDirectMessage==='function') openDirectMessage(coachId,'Coach Shan',''); } catch(e){} await new Promise(function(r){ setTimeout(r,420); }); } },
     { tab:'dashboard', sel:'#next-obvious-steps-card', title:'Your feedback is welcome', body:'When your check-in is due, open it from To Do Next. The optional feedback box lets you tell Shannon what is working well with the app or coaching, and what could be better.' },
+    { tab:'profile', sel:'#settings-coaching-support', title:'Support that suits you', body:'Choose optional morning messages on saved training days, after-session check-ins, and a gentle or firmer tone. Both switches start off. Weekly check-ins remain; change your choices anytime.' },
     { tab:'dashboard', sel:'#weekly-checkin-card', title:'Extra accountability when you need it', body:'Choose Keep me accountable in your Weekly Check-In to see optional extra support, including a mid-week voice check-in or a recurring live PT session.', condition:function(){ var c=document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#next-obvious-steps-card .next-steps-head', fallbackSel:'#next-obvious-steps-card .next-step-action,#next-obvious-steps-card', title:'Your app tour starts here', fallbackTitle:'Your app tour starts here', body:'To do next is your simple map. We will return here between each part of your plan, so you always know what comes next.', metaPreview:true, clientActivation:true, action:function(){ try { if(window.pbbNextSteps && typeof window.pbbNextSteps.refresh === 'function') window.pbbNextSteps.refresh(); } catch(e){} } },
     { tab:'dashboard', sel:'#ai-plan-meals-list .ai-plan-hero__carousel-button--next', fallbackSel:'#ai-plan-meals-list .ai-plan-hero', title:'See every meal on Day 1', fallbackTitle:'Your meal plan needs another moment', body:'Tap the highlighted arrow to look through breakfast, lunch, dinner and snacks. Open any meal for the recipe, ingredients and an easy way to log it.', fallbackBody:'Your prepared plan did not finish opening. Return Home and tap the meal-plan task again.', pageView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, requiresHighlightedClick:true, requiredHighlightedClicks:4, controlPromptPosition:'top', highlightedClickPrompt:'Tap the highlighted arrow to see another Day 1 meal.', highlightedClickProgress:function(clicks){ return 'You have seen ' + (clicks + 1) + ' of 5 meals. Keep tapping the arrow.'; }, highlightedClickComplete:'Perfect. You have seen all five Day 1 meals.', returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="meal_plan_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'First: see your meal plan', preActionBody:'Tap the highlighted To Do card to open the meals Shannon has prepared for your week.', preActionButton:'Tap the meal plan card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('meal_plan_intro'); await new Promise(function(r){ setTimeout(r,650); }); return await openMetaPreviewMealPlanSurface(); } catch(e){ return false; } } },
@@ -18897,36 +18908,9 @@ window.endFeatureTour = function(skipped){
                 <input type="hidden" id="wizard-training-days" value="">
             </div>
 
-            <!-- SLIDE 5: SPLIT PREFERENCE (gym users only) -->
+            <!-- SLIDE 5: COACHING SUPPORT -->
             <div class="wizard-slide" id="slide-5" style="display:none;">
-                <div style="text-align:center; margin-bottom:20px; font-size:3rem;">💪</div>
-                <h3 style="text-align:center; margin-bottom:10px;">Choose Your Training Split</h3>
-                <p style="text-align:center; color:#666; margin-bottom:20px;">How do you want to structure your workouts?</p>
-
-                <div style="display:flex; flex-direction:column; gap:10px;">
-                    <button type="button" onclick="selectSplitPreference('full_body')" class="split-btn" data-split="full_body" style="text-align:left; padding:15px; border-radius:12px; border:2px solid #e2e8f0; background:#fff; cursor:pointer;">
-                        <div style="font-weight:700; color:#1a4d2e;">Full Body</div>
-                        <div style="font-size:12px; color:#666;">Train all muscle groups each session</div>
-                        <div style="font-size:11px; color:#48864B; margin-top:4px;">Best for: 2-3 days/week</div>
-                    </button>
-                    <button type="button" onclick="selectSplitPreference('ppl')" class="split-btn" data-split="ppl" style="text-align:left; padding:15px; border-radius:12px; border:2px solid #e2e8f0; background:#fff; cursor:pointer;">
-                        <div style="font-weight:700; color:#1a4d2e;">Push / Pull / Legs</div>
-                        <div style="font-size:12px; color:#666;">Split by movement patterns</div>
-                        <div style="font-size:11px; color:#48864B; margin-top:4px;">Best for: 3-6 days/week</div>
-                    </button>
-                    <button type="button" onclick="selectSplitPreference('upper_lower')" class="split-btn" data-split="upper_lower" style="text-align:left; padding:15px; border-radius:12px; border:2px solid #e2e8f0; background:#fff; cursor:pointer;">
-                        <div style="font-weight:700; color:#1a4d2e;">Upper / Lower</div>
-                        <div style="font-size:12px; color:#666;">Alternate upper and lower body</div>
-                        <div style="font-size:11px; color:#48864B; margin-top:4px;">Best for: 4 days/week</div>
-                    </button>
-                    <button type="button" onclick="selectSplitPreference('bro_split')" class="split-btn" data-split="bro_split" style="text-align:left; padding:15px; border-radius:12px; border:2px solid #e2e8f0; background:#fff; cursor:pointer;">
-                        <div style="font-weight:700; color:#1a4d2e;">Bro Split</div>
-                        <div style="font-size:12px; color:#666;">One muscle group per day</div>
-                        <div style="font-size:11px; color:#48864B; margin-top:4px;">Best for: 5-6 days/week</div>
-                    </button>
-                </div>
-
-                <input type="hidden" id="wizard-split-preference" value="">
+                <div data-support-mount="support-onboarding"></div>
             </div>
 
             <!-- SLIDE 6: EXERCISE PREFERENCES -->

@@ -145,7 +145,7 @@ test('the reduced onboarding loads the matrix first and includes workout prefere
     const matrixPosition = dashboard.indexOf('pbb-onboarding-workout-plans.js?v=');
     const onboardingPosition = dashboard.indexOf('dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=');
     assert.ok(matrixPosition >= 0 && matrixPosition < onboardingPosition);
-    assert.match(onboardingSource, /const skippedWizardSlides = \[2, 5, 8,/);
+    assert.match(onboardingSource, /const skippedWizardSlides = \[2, 8,/);
     assert.doesNotMatch(onboardingSource, /wizardTrainingFrequency >= 4 \? 'upper_lower'/);
     assert.match(onboardingSource, /PBBOnboardingWorkoutPlans\?\.buildCalendar/);
     assert.match(onboardingSource, /getEquipmentOptions\(equipment, wizardTrainingFrequency, window\.WORKOUT_LIBRARY\)/);

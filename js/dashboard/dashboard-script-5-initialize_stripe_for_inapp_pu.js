@@ -8044,7 +8044,7 @@ _onDomReady(initPushPermissionReminder);
 // --- ONBOARDING WIZARD LOGIC ---
 let currentWizardStep = 1;
 const totalWizardSteps = 19;
-const skippedWizardSlides = [2, 5, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+const skippedWizardSlides = [2, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
 const finalWizardStep = 19;
 let wizardSlideTransitionTimer = null;
 const wizardSlideTransitionMs = 280;
@@ -8100,12 +8100,13 @@ function isTransferredWizardClient() {
 }
 
 function isWizardSlideSkipped(step) {
-    if (window.BalanceFreeStarter?.coached?.() && [3,4,5,6,7].includes(step)) return true;
+    if (step === 5 && window.BalanceCoachingSupport?.isEligible() !== true) return true;
+    if (window.BalanceFreeStarter?.coached?.() && [3,4,6,7].includes(step)) return true;
     // Cycle alignment is relevant only when the member explicitly chose "For her".
     // Keep this rule here so forward, back, and resumed onboarding paths all agree.
     if (step === 3 && normalizeGenderValue(selectedGender) !== 'female') return true;
     if (step === 4 && isTransferredWizardClient()) return true;
-    if (wizardAssignedProgram && [4, 5, 6].includes(step)) return true;
+    if (wizardAssignedProgram && [4, 6].includes(step)) return true;
     if (step === 17 && window._wizardCustomizeOnlyMode) return false;
     if (skippedWizardSlides.includes(step)) return true;
     return step === 17 && !window._wizardCustomizeOnlyMode &&
@@ -8838,6 +8839,7 @@ function saveWizardCheckpoint() {
 }
 
 function restoreWizardCheckpoint() {
+    window.BalanceCoachingSupport?.mount();
     const saved = window.BalanceOnboardingProgress?.read();
     const draft = saved?.stage === 'setup' && saved.wizard;
     if (!draft) return false;
@@ -8867,6 +8869,7 @@ function restoreWizardCheckpoint() {
             if (typeof field.checked === 'boolean') el.checked = field.checked;
         }
     });
+    if ((draft.fields || []).some(field => field.id === 'support-onboarding-morning')) window.BalanceCoachingSupport?.markDraftRestored();
     wizardChatNeedsResume = wizardChatStarted;
     return true;
 }
@@ -11826,6 +11829,8 @@ function updateWizardUI() {
         renderWizardStarterRoutineRecommendation();
     }
 
+    if(currentWizardStep === 5) window.BalanceCoachingSupport?.prepareOnboarding();
+
     if(currentWizardStep === 6) {
         renderWizardExercisePreferenceChips();
     }
@@ -12296,6 +12301,7 @@ function applyGenderSpecificUI() {
 }
 
 async function wizardNext() {
+    await window.BalanceCoachingSupport?.checkEligibility?.();
     // Step 1: Conversational setup fills the legacy profile inputs, then reuses
     // the existing Step 2 save path so downstream onboarding stays compatible.
     if(currentWizardStep === 1) {
@@ -12639,29 +12645,19 @@ async function wizardNext() {
         wizardSplitPreference = existingData.split_preference;
         generateWizardCalendar();
 
-        // Check if user has gym equipment - if not, skip split preference (step 5)
-        const equipment = existingData.equipment_access;
-        if (equipment !== 'gym') {
-            // Skip split preference and move to optional exercise preferences.
-            currentWizardStep = 6;
-            updateWizardUI();
-            return;
-        }
+        // Support choices follow the saved training days for every equipment type.
     }
 
-    // Validation for Step 5: Split Preference
+    // Step 5: independent optional coaching-service contact consent.
     if(currentWizardStep === 5) {
-        if (!wizardSplitPreference) {
-            wizardAlert("Please select your training split preference.");
-            return;
-        }
-
-        // Save to sessionStorage
-        let existingData = {};
-        try { existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
-        existingData.split_preference = wizardSplitPreference;
-        sessionStorage.setItem('userProfile', JSON.stringify(existingData));
-
+        if (!window.BalanceCoachingSupport) { wizardAlert('Support choices could not load. Please refresh and try again.'); return; }
+        const next = document.getElementById('wizard-next');
+        if (next?.disabled) return;
+        if (next) next.disabled = true;
+        let saved = false;
+        try { saved = await window.BalanceCoachingSupport?.save('support-onboarding','app_onboarding'); }
+        finally { if (next) next.disabled = false; }
+        if (!saved) return;
     }
 
     // Step 6: Exercise preferences - optional, then generate the calendar preview.
@@ -12727,14 +12723,7 @@ function wizardPrev() {
             // Males skip cycle tracking (step 3)
             currentWizardStep = 2;
         } else if (currentWizardStep === 6) {
-            // Check if we should skip split preference (non-gym users)
-            let userData = {};
-            try { userData = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
-            if (userData.equipment_access !== 'gym') {
-                currentWizardStep = 4; // Skip back to frequency/days
-            } else {
-                currentWizardStep--;
-            }
+            currentWizardStep = 5;
         } else {
             currentWizardStep--;
         }
