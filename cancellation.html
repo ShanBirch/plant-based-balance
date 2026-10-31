@@ -11,7 +11,7 @@
         :root { --cream:#f7f2e8; --paper:#fffdf8; --ink:#1d211c; --muted:#676b63; --gold:#b18a3d; --green:#2f6b3b; --line:#ded5c4; --danger:#9a352f; }
         * { box-sizing:border-box; }
         body { margin:0; min-height:100vh; background:var(--cream); color:var(--ink); font-family:Montserrat,system-ui,sans-serif; -webkit-text-fill-color:var(--ink); }
-        main { width:min(680px,100%); margin:0 auto; padding:calc(18px + env(safe-area-inset-top,0px)) 20px calc(64px + env(safe-area-inset-bottom,0px)); touch-action:pan-y; }
+        main { width:min(680px,100%); margin:0 auto; padding:max(42px,env(safe-area-inset-top,0px)) 20px calc(64px + env(safe-area-inset-bottom,0px)); touch-action:pan-y; }
         .settings-back { width:auto; min-height:44px; margin:0 0 20px; padding:9px 13px 9px 10px; border:1px solid var(--line); border-radius:999px; background:var(--paper); color:var(--ink); -webkit-text-fill-color:var(--ink); gap:7px; box-shadow:0 4px 18px rgba(64,48,22,.05); }
         .settings-back span { font-size:1.25rem; line-height:1; }
         .brand { display:flex; align-items:center; gap:12px; margin-bottom:36px; font-weight:800; letter-spacing:.16em; }
@@ -57,7 +57,7 @@
     <p>See the cancellation timing that applies to your plan and stop future renewal online.</p>
 
     <section class="card notice">
-        <h2>How cancellation works</h2><p>The separate AUD14.70/week organic challenge continuation has no minimum term. Cancel online or with Shannon before your next weekly payment. Access continues through the paid weekly period.</p><p>New starting coaching packages have a ten-week minimum; separate ongoing coaching has a three-month minimum. Their written cancellation and payment arrangements are confirmed before enrolment. A repeat upfront fee and automatic renewal are not assumed. Existing clients keep their accepted rates and terms.</p>
+        <h2>How cancellation works</h2><p>The separately agreed organic challenge continuation has no minimum term. Cancel online or with Shannon before your next weekly payment. Access continues through the paid weekly period.</p><p>New starting coaching packages have a ten-week minimum; separate ongoing coaching has a three-month minimum. Their written cancellation and payment arrangements are confirmed before enrolment. A repeat upfront fee and automatic renewal are not assumed. Existing clients keep their accepted rates and terms.</p>
         <p>Legacy Balance Learn subscriptions with the six-week agreement have a six-week minimum, then you can cancel any time before the next weekly payment. An earlier request takes effect at the end of the six-week minimum. Access continues through the paid period, with no additional notice period. Existing subscriptions keep their accepted terms. Legacy direct recurring subscriptions whose accepted agreement requires notice require 30 days' notice. Billing and access continue during that period. If your coaching plan still has an initial minimum, the later date applies.</p>
         <p>Subscriptions purchased earlier keep the terms accepted at purchase. Apple and Google subscriptions use the store's cancellation timing.</p>
     </section>
