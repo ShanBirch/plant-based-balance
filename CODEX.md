@@ -649,3 +649,6 @@ Shannon requested the onboarding coach video as the welcome, without a separate 
 ## First-login ending, 29 September 2026
 
 The in-app first-login tour keeps its app showcase and ends with a text introduction from Coach Shannon, replacing the required welcome video and automatic payment request. It explains weekly review of workouts, meal plan, Learn progress and how the week is going, conditional on an active plan that includes coaching. Previews and app-only plans do not include weekly reviews. Unpaid users may book the current `/book` call destination or keep exploring. Existing member billing is unchanged. Measurement variant: `onboarding_coach_message_v1`; see `docs/onboarding-coach-message.md`. This change is confined to the in-app onboarding and welcome UI, not the separate DM conversation contract.
+
+
+Confirmed private continuation inclusions (Shannon, 1 November 2026): the meal plan and programming/nutrition inclusions and weekly programme updates match the AUD75 option; the weekly check-in is TEXT, not a voice note. No automatic voice-note entitlement. Keep the confirmed AUD14.70 weekly rate and separate existing terms. Do not call the offers identical, invent a usual-price comparison or add a seven-day deadline. AUD49.99/AUD15 suggestions remain exploratory, with no new tier or price change authorised.

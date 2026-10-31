@@ -149,3 +149,6 @@ unreviewed automatic messages. Standard course/sales milestones skip this cohort
   tests/free-starter-access.test.js`; transaction-only database tests:
   `supabase/tests/free-coaching-month.sql`. Replace its program placeholder with
   the canonical builder output. All fixtures roll back; no live messages test it.
+
+
+Confirmed private continuation inclusions (Shannon, 1 November 2026): the meal plan and programming/nutrition inclusions and weekly programme updates match the AUD75 option; the weekly check-in is TEXT, not a voice note. No automatic voice-note entitlement. Keep the confirmed AUD14.70 weekly rate and separate existing terms. Do not call the offers identical, invent a usual-price comparison or add a seven-day deadline. AUD49.99/AUD15 suggestions remain exploratory, with no new tier or price change authorised.
