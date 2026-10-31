@@ -543,6 +543,1063 @@
     Cache-Control = "public, max-age=0, must-revalidate"
 
 # Ensure we redirect legacy URLs
+# Public website domain consolidation. Keep legacy app/API/callback paths working.
+[[redirects]]
+  from = "https://plantbased-balance.org/"
+  to = "https://balanceneurosciencefitness.com/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/apps-for-coaches"
+  to = "https://balanceneurosciencefitness.com/apps-for-coaches"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/apps-for-coaches.html"
+  to = "https://balanceneurosciencefitness.com/apps-for-coaches.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/balance"
+  to = "https://balanceneurosciencefitness.com/balance"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/balance.html"
+  to = "https://balanceneurosciencefitness.com/balance.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/bio"
+  to = "https://balanceneurosciencefitness.com/bio"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/bio.html"
+  to = "https://balanceneurosciencefitness.com/bio.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog"
+  to = "https://balanceneurosciencefitness.com/blog"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-alcohol"
+  to = "https://balanceneurosciencefitness.com/blog-alcohol"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-alcohol.html"
+  to = "https://balanceneurosciencefitness.com/blog-alcohol.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-anti-inflammatory"
+  to = "https://balanceneurosciencefitness.com/blog-anti-inflammatory"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-anti-inflammatory.html"
+  to = "https://balanceneurosciencefitness.com/blog-anti-inflammatory.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-calorie-counting"
+  to = "https://balanceneurosciencefitness.com/blog-calorie-counting"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-calorie-counting.html"
+  to = "https://balanceneurosciencefitness.com/blog-calorie-counting.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-cortisol"
+  to = "https://balanceneurosciencefitness.com/blog-cortisol"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-cortisol.html"
+  to = "https://balanceneurosciencefitness.com/blog-cortisol.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-fasting"
+  to = "https://balanceneurosciencefitness.com/blog-fasting"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-fasting.html"
+  to = "https://balanceneurosciencefitness.com/blog-fasting.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-fitness"
+  to = "https://balanceneurosciencefitness.com/blog-fitness"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-fitness.html"
+  to = "https://balanceneurosciencefitness.com/blog-fitness.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-gut-health"
+  to = "https://balanceneurosciencefitness.com/blog-gut-health"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-gut-health.html"
+  to = "https://balanceneurosciencefitness.com/blog-gut-health.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-hydration"
+  to = "https://balanceneurosciencefitness.com/blog-hydration"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-hydration.html"
+  to = "https://balanceneurosciencefitness.com/blog-hydration.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-insulin"
+  to = "https://balanceneurosciencefitness.com/blog-insulin"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-insulin.html"
+  to = "https://balanceneurosciencefitness.com/blog-insulin.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-libido"
+  to = "https://balanceneurosciencefitness.com/blog-libido"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-libido.html"
+  to = "https://balanceneurosciencefitness.com/blog-libido.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-meal-prep"
+  to = "https://balanceneurosciencefitness.com/blog-meal-prep"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-meal-prep.html"
+  to = "https://balanceneurosciencefitness.com/blog-meal-prep.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-meditation"
+  to = "https://balanceneurosciencefitness.com/blog-meditation"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-meditation.html"
+  to = "https://balanceneurosciencefitness.com/blog-meditation.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-mindset"
+  to = "https://balanceneurosciencefitness.com/blog-mindset"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-mindset.html"
+  to = "https://balanceneurosciencefitness.com/blog-mindset.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-protein"
+  to = "https://balanceneurosciencefitness.com/blog-protein"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-protein.html"
+  to = "https://balanceneurosciencefitness.com/blog-protein.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-skin"
+  to = "https://balanceneurosciencefitness.com/blog-skin"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-skin.html"
+  to = "https://balanceneurosciencefitness.com/blog-skin.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-sleep"
+  to = "https://balanceneurosciencefitness.com/blog-sleep"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-sleep.html"
+  to = "https://balanceneurosciencefitness.com/blog-sleep.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-smoothie"
+  to = "https://balanceneurosciencefitness.com/blog-smoothie"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-smoothie.html"
+  to = "https://balanceneurosciencefitness.com/blog-smoothie.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-social-events"
+  to = "https://balanceneurosciencefitness.com/blog-social-events"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-social-events.html"
+  to = "https://balanceneurosciencefitness.com/blog-social-events.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-supplements"
+  to = "https://balanceneurosciencefitness.com/blog-supplements"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-supplements.html"
+  to = "https://balanceneurosciencefitness.com/blog-supplements.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-thyroid"
+  to = "https://balanceneurosciencefitness.com/blog-thyroid"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-thyroid.html"
+  to = "https://balanceneurosciencefitness.com/blog-thyroid.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-workout"
+  to = "https://balanceneurosciencefitness.com/blog-workout"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog-workout.html"
+  to = "https://balanceneurosciencefitness.com/blog-workout.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/blog.html"
+  to = "https://balanceneurosciencefitness.com/blog.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/book"
+  to = "https://balanceneurosciencefitness.com/book"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/book.html"
+  to = "https://balanceneurosciencefitness.com/book.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/calc-calorie-deficit.html"
+  to = "https://balanceneurosciencefitness.com/calc-calorie-deficit.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/calc-fasting-timer.html"
+  to = "https://balanceneurosciencefitness.com/calc-fasting-timer.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/calc-ideal-weight.html"
+  to = "https://balanceneurosciencefitness.com/calc-ideal-weight.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/calc-macro-split.html"
+  to = "https://balanceneurosciencefitness.com/calc-macro-split.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/calc-water-intake.html"
+  to = "https://balanceneurosciencefitness.com/calc-water-intake.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/calculators.html"
+  to = "https://balanceneurosciencefitness.com/calculators.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/clients"
+  to = "https://balanceneurosciencefitness.com/clients"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/clients.html"
+  to = "https://balanceneurosciencefitness.com/clients.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/coaching"
+  to = "https://balanceneurosciencefitness.com/coaching"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/coaching.html"
+  to = "https://balanceneurosciencefitness.com/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/contact"
+  to = "https://balanceneurosciencefitness.com/contact"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/contact.html"
+  to = "https://balanceneurosciencefitness.com/contact.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/data-deletion"
+  to = "https://balanceneurosciencefitness.com/data-deletion"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/data-deletion.html"
+  to = "https://balanceneurosciencefitness.com/data-deletion.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/fitness"
+  to = "https://balanceneurosciencefitness.com/fitness"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/fitness-coaching"
+  to = "https://balanceneurosciencefitness.com/fitness-coaching"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/fitness-coaching.html"
+  to = "https://balanceneurosciencefitness.com/fitness-coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/founders"
+  to = "https://balanceneurosciencefitness.com/founders"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/index"
+  to = "https://balanceneurosciencefitness.com/index"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/index.html"
+  to = "https://balanceneurosciencefitness.com/index.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/journey"
+  to = "https://balanceneurosciencefitness.com/journey"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/journey.html"
+  to = "https://balanceneurosciencefitness.com/journey.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/learning"
+  to = "https://balanceneurosciencefitness.com/learning"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/learning.html"
+  to = "https://balanceneurosciencefitness.com/learning.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/plant-based-fitness"
+  to = "https://balanceneurosciencefitness.com/plant-based-fitness"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/plant-based-fitness.html"
+  to = "https://balanceneurosciencefitness.com/plant-based-fitness.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/plantbasedswitch"
+  to = "https://balanceneurosciencefitness.com/plantbasedswitch"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/plantbasedswitch.html"
+  to = "https://balanceneurosciencefitness.com/plantbasedswitch.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/privacy"
+  to = "https://balanceneurosciencefitness.com/privacy"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/privacy.html"
+  to = "https://balanceneurosciencefitness.com/privacy.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/research.html"
+  to = "https://balanceneurosciencefitness.com/research.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/terms"
+  to = "https://balanceneurosciencefitness.com/terms"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/terms.html"
+  to = "https://balanceneurosciencefitness.com/terms.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/welcome"
+  to = "https://balanceneurosciencefitness.com/welcome"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://plantbased-balance.org/welcome.html"
+  to = "https://balanceneurosciencefitness.com/welcome.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/"
+  to = "https://balanceneurosciencefitness.com/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/apps-for-coaches"
+  to = "https://balanceneurosciencefitness.com/apps-for-coaches"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/apps-for-coaches.html"
+  to = "https://balanceneurosciencefitness.com/apps-for-coaches.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/balance"
+  to = "https://balanceneurosciencefitness.com/balance"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/balance.html"
+  to = "https://balanceneurosciencefitness.com/balance.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/bio"
+  to = "https://balanceneurosciencefitness.com/bio"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/bio.html"
+  to = "https://balanceneurosciencefitness.com/bio.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog"
+  to = "https://balanceneurosciencefitness.com/blog"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-alcohol"
+  to = "https://balanceneurosciencefitness.com/blog-alcohol"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-alcohol.html"
+  to = "https://balanceneurosciencefitness.com/blog-alcohol.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-anti-inflammatory"
+  to = "https://balanceneurosciencefitness.com/blog-anti-inflammatory"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-anti-inflammatory.html"
+  to = "https://balanceneurosciencefitness.com/blog-anti-inflammatory.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-calorie-counting"
+  to = "https://balanceneurosciencefitness.com/blog-calorie-counting"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-calorie-counting.html"
+  to = "https://balanceneurosciencefitness.com/blog-calorie-counting.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-cortisol"
+  to = "https://balanceneurosciencefitness.com/blog-cortisol"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-cortisol.html"
+  to = "https://balanceneurosciencefitness.com/blog-cortisol.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-fasting"
+  to = "https://balanceneurosciencefitness.com/blog-fasting"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-fasting.html"
+  to = "https://balanceneurosciencefitness.com/blog-fasting.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-fitness"
+  to = "https://balanceneurosciencefitness.com/blog-fitness"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-fitness.html"
+  to = "https://balanceneurosciencefitness.com/blog-fitness.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-gut-health"
+  to = "https://balanceneurosciencefitness.com/blog-gut-health"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-gut-health.html"
+  to = "https://balanceneurosciencefitness.com/blog-gut-health.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-hydration"
+  to = "https://balanceneurosciencefitness.com/blog-hydration"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-hydration.html"
+  to = "https://balanceneurosciencefitness.com/blog-hydration.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-insulin"
+  to = "https://balanceneurosciencefitness.com/blog-insulin"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-insulin.html"
+  to = "https://balanceneurosciencefitness.com/blog-insulin.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-libido"
+  to = "https://balanceneurosciencefitness.com/blog-libido"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-libido.html"
+  to = "https://balanceneurosciencefitness.com/blog-libido.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-meal-prep"
+  to = "https://balanceneurosciencefitness.com/blog-meal-prep"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-meal-prep.html"
+  to = "https://balanceneurosciencefitness.com/blog-meal-prep.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-meditation"
+  to = "https://balanceneurosciencefitness.com/blog-meditation"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-meditation.html"
+  to = "https://balanceneurosciencefitness.com/blog-meditation.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-mindset"
+  to = "https://balanceneurosciencefitness.com/blog-mindset"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-mindset.html"
+  to = "https://balanceneurosciencefitness.com/blog-mindset.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-protein"
+  to = "https://balanceneurosciencefitness.com/blog-protein"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-protein.html"
+  to = "https://balanceneurosciencefitness.com/blog-protein.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-skin"
+  to = "https://balanceneurosciencefitness.com/blog-skin"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-skin.html"
+  to = "https://balanceneurosciencefitness.com/blog-skin.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-sleep"
+  to = "https://balanceneurosciencefitness.com/blog-sleep"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-sleep.html"
+  to = "https://balanceneurosciencefitness.com/blog-sleep.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-smoothie"
+  to = "https://balanceneurosciencefitness.com/blog-smoothie"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-smoothie.html"
+  to = "https://balanceneurosciencefitness.com/blog-smoothie.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-social-events"
+  to = "https://balanceneurosciencefitness.com/blog-social-events"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-social-events.html"
+  to = "https://balanceneurosciencefitness.com/blog-social-events.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-supplements"
+  to = "https://balanceneurosciencefitness.com/blog-supplements"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-supplements.html"
+  to = "https://balanceneurosciencefitness.com/blog-supplements.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-thyroid"
+  to = "https://balanceneurosciencefitness.com/blog-thyroid"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-thyroid.html"
+  to = "https://balanceneurosciencefitness.com/blog-thyroid.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-workout"
+  to = "https://balanceneurosciencefitness.com/blog-workout"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog-workout.html"
+  to = "https://balanceneurosciencefitness.com/blog-workout.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/blog.html"
+  to = "https://balanceneurosciencefitness.com/blog.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/book"
+  to = "https://balanceneurosciencefitness.com/book"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/book.html"
+  to = "https://balanceneurosciencefitness.com/book.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/calc-calorie-deficit.html"
+  to = "https://balanceneurosciencefitness.com/calc-calorie-deficit.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/calc-fasting-timer.html"
+  to = "https://balanceneurosciencefitness.com/calc-fasting-timer.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/calc-ideal-weight.html"
+  to = "https://balanceneurosciencefitness.com/calc-ideal-weight.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/calc-macro-split.html"
+  to = "https://balanceneurosciencefitness.com/calc-macro-split.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/calc-water-intake.html"
+  to = "https://balanceneurosciencefitness.com/calc-water-intake.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/calculators.html"
+  to = "https://balanceneurosciencefitness.com/calculators.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/clients"
+  to = "https://balanceneurosciencefitness.com/clients"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/clients.html"
+  to = "https://balanceneurosciencefitness.com/clients.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/coaching"
+  to = "https://balanceneurosciencefitness.com/coaching"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/coaching.html"
+  to = "https://balanceneurosciencefitness.com/coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/contact"
+  to = "https://balanceneurosciencefitness.com/contact"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/contact.html"
+  to = "https://balanceneurosciencefitness.com/contact.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/data-deletion"
+  to = "https://balanceneurosciencefitness.com/data-deletion"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/data-deletion.html"
+  to = "https://balanceneurosciencefitness.com/data-deletion.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/fitness"
+  to = "https://balanceneurosciencefitness.com/fitness"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/fitness-coaching"
+  to = "https://balanceneurosciencefitness.com/fitness-coaching"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/fitness-coaching.html"
+  to = "https://balanceneurosciencefitness.com/fitness-coaching.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/founders"
+  to = "https://balanceneurosciencefitness.com/founders"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/index"
+  to = "https://balanceneurosciencefitness.com/index"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/index.html"
+  to = "https://balanceneurosciencefitness.com/index.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/journey"
+  to = "https://balanceneurosciencefitness.com/journey"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/journey.html"
+  to = "https://balanceneurosciencefitness.com/journey.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/learning"
+  to = "https://balanceneurosciencefitness.com/learning"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/learning.html"
+  to = "https://balanceneurosciencefitness.com/learning.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/plant-based-fitness"
+  to = "https://balanceneurosciencefitness.com/plant-based-fitness"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/plant-based-fitness.html"
+  to = "https://balanceneurosciencefitness.com/plant-based-fitness.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/plantbasedswitch"
+  to = "https://balanceneurosciencefitness.com/plantbasedswitch"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/plantbasedswitch.html"
+  to = "https://balanceneurosciencefitness.com/plantbasedswitch.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/privacy"
+  to = "https://balanceneurosciencefitness.com/privacy"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/privacy.html"
+  to = "https://balanceneurosciencefitness.com/privacy.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/research.html"
+  to = "https://balanceneurosciencefitness.com/research.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/terms"
+  to = "https://balanceneurosciencefitness.com/terms"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/terms.html"
+  to = "https://balanceneurosciencefitness.com/terms.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/welcome"
+  to = "https://balanceneurosciencefitness.com/welcome"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.plantbased-balance.org/welcome.html"
+  to = "https://balanceneurosciencefitness.com/welcome.html"
+  status = 301
+  force = true
+
 [[redirects]]
   from = "/"
   to = "/balance.html"

@@ -6,4 +6,4 @@ Disallow: /booking-settings.html
 Disallow: /success.html
 Disallow: /oauth-callback.html
 
-Sitemap: https://plantbased-balance.org/sitemap.xml
+Sitemap: https://balanceneurosciencefitness.com/sitemap.xml

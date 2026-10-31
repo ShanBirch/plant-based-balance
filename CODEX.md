@@ -1,5 +1,9 @@
 # Balance Codex Operating Brief
 
+## Domain correction - 1 November 2026
+
+Use https://balanceneurosciencefitness.com for all new Balance websites and public links. This supersedes historical plantbased-balance.org destinations below. Preserve legacy technical connections and email until individually migrated. See docs/BALANCE_DOMAIN_POLICY.md.
+
 ## App diagnostics (26 October 2026)
 
 For app problems, read `docs/startup-error-debugging.md` and query current
@@ -96,7 +100,7 @@ Shannon also requested the earlier typing experience on 29 September: show the n
 
 ## Historical, superseded challenge-lead DM content (27 September 2026)
 
-For eligible new Shan n Sunny / Balance Instagram and verified Balance Facebook leads, the current offer is the **eight-week plant-based transformation challenge**. Welcome vegetarian and transitioning plant-based people too. Use the full conversation and saved facts to understand the goal, briefly explain relevant training, meal plans, Balance Learn education, accountability/community, then provide the existing rich consultation card at `https://plantbased-balance.org/book?source=plant_based_challenge` when the person genuinely asks for help. No repeated discovery or permission loop, default free preview, unsolicited course dump or price. Respect refusals, thinking time, ordinary rapport and already-delivered cards; answer every live question across the complete unanswered batch. The consultation is 60 minutes; do not claim a booking until verified.
+For eligible new Shan n Sunny / Balance Instagram and verified Balance Facebook leads, the current offer is the **eight-week plant-based transformation challenge**. Welcome vegetarian and transitioning plant-based people too. Use the full conversation and saved facts to understand the goal, briefly explain relevant training, meal plans, Balance Learn education, accountability/community, then provide the existing rich consultation card at `https://balanceneurosciencefitness.com/book?source=plant_based_challenge` when the person genuinely asks for help. No repeated discovery or permission loop, default free preview, unsolicited course dump or price. Respect refusals, thinking time, ordinary rapport and already-delivered cards; answer every live question across the complete unanswered batch. The consultation is 60 minutes; do not claim a booking until verified.
 
 The optional AUD $125/week package includes one weekly 30-minute live 1:1 workout plus challenge support and Balance Learn. It is not a universal challenge price or universal live-training inclusion. Answer requested prices/product facts directly, without forcing booking to get an answer. **Balance Learn itself remains six weeks**; the challenge does not rename or extend that curriculum or existing entitlements.
 
@@ -114,7 +118,7 @@ This file is the durable handoff context for Codex sessions. Read it at the star
 
 ## Current Summer Ready Shred campaign (29 September 2026)
 
-For this campaign, the current offer overrides historical Foundations/Founders and eight-week acquisition wording below. Summer Ready Shred starts 5 October 2026 and lasts ten weeks, welcomes people of all genders, and includes plant-based meal guidance and the six-week Balance Learn course. Current published packages are AUD $75/week online coaching or AUD $125/week with one weekly live Zoom training session, plus one AUD $120 onboarding fee per enrolment. Ten-week minimum totals are AUD $870 and AUD $1,370. Do not infer the new Zoom session length or renewal terms from older packages. Instagram DMs lead to an appropriate, consented consultation booking at https://plantbased-balance.org/book?source=plant_based_challenge. The consultation is a 60-minute video call. Never substitute a $149 Founders checkout for this campaign. Existing client agreements remain unchanged. See docs/summer-ready-funnel-audit-2026-09-29.md and docs/summer-shred-website-2026-09-29.md for evidence and scope.
+For this campaign, the current offer overrides historical Foundations/Founders and eight-week acquisition wording below. Summer Ready Shred starts 5 October 2026 and lasts ten weeks, welcomes people of all genders, and includes plant-based meal guidance and the six-week Balance Learn course. Current published packages are AUD $75/week online coaching or AUD $125/week with one weekly live Zoom training session, plus one AUD $120 onboarding fee per enrolment. Ten-week minimum totals are AUD $870 and AUD $1,370. Do not infer the new Zoom session length or renewal terms from older packages. Instagram DMs lead to an appropriate, consented consultation booking at https://balanceneurosciencefitness.com/book?source=plant_based_challenge. The consultation is a 60-minute video call. Never substitute a $149 Founders checkout for this campaign. Existing client agreements remain unchanged. See docs/summer-ready-funnel-audit-2026-09-29.md and docs/summer-shred-website-2026-09-29.md for evidence and scope.
 
 ## Who You Are Working With
 
@@ -160,7 +164,7 @@ Shannon retired the public Founders Pass name. Use **Balance Learn** for the AUD
 - Use singular "Balance", not "Balances" and not the legacy codename.
 - Public app store name: Balance: Plant-Based Fitness.
 - Website brand: Balance Neuroscience Fitness (Shannon requested the rebrand on 10 September 2026). Keep Balance as the short app/product name.
-- Live domain remains plantbased-balance.org pending registration and verified migration of a new domain. Current email remains shannon@plantbased-balance.org until the new Workspace address is working. Do not replace operational URLs or mail recipients with an unregistered domain.
+- Primary public domain: balanceneurosciencefitness.com, verified connected with HTTPS and made primary in Netlify on 1 November 2026. Shannon explicitly wants this domain used for all websites and new public links. Keep plantbased-balance.org registered for compatibility redirects, existing native apps, callbacks and email; do not cancel it or blindly rewrite credentials, allowlists, webhook endpoints or email addresses. See docs/BALANCE_DOMAIN_POLICY.md.
 - Rebrand migration checklist: docs/BALANCE_REBRAND_2026_09.md.
 - Native bundle ID still uses the old `com.fitgotchi.app` codename. Do not use "FitGotchi" in user-facing copy.
 - Logo asset: `balance_logo.png`, Japanese kanji wa/harmony.
@@ -178,7 +182,7 @@ Shannon retired the public Founders Pass name. Use **Balance Learn** for the AUD
   - Balance Online Coaching: the same ongoing individual coaching at three weekly-billed commitment tiers. Six months is AUD $29.99/week with a 26-week initial minimum, three months is AUD $49.99/week with a 13-week initial minimum, and month-to-month is AUD $74.99/week with a four-week initial minimum. Each includes app/community access, one weekly check-in, and workout and food review/adjustments from Shannon. After the initial minimum, the selected weekly rate continues until cancelled.
 - Coaching + Calls was removed from the public offer on 9 September 2026 at Shannon's request. Do not advertise or recommend it to new clients. Existing subscription records and entitlements remain unchanged.
 - Balance 1:1 Zoom PT is a capacity-limited premium service with live 30-minute sessions, personalised programming, general vegetarian or plant-based food guidance, Balance access, and in-app accountability. Zoom PT 1 is AUD $125/week for one session, Zoom PT 3 is AUD $275/week for three sessions, and Zoom PT 5 is AUD $425/week for five sessions. It begins with a six-week coaching block. Confirm health fit and recurring availability before taking payment; public website CTAs book a fit call rather than opening checkout.
-- Route by fit instead of forcing the Founders Pass: structured six-week starting course -> Founders Pass; self-directed ongoing app/community -> App + Community; ongoing personalised weekly progression and review -> Online Coaching; live supervised workouts -> 1:1 Zoom PT. The Founders Pass and Online Coaching both include one weekly review during the first six weeks, but Founders follows the fixed Balance Learn curriculum and ends after six weeks while Online Coaching continues at the selected tier until cancelled. Use `https://plantbased-balance.org/coaching.html` for package comparison. Zoom PT requires an availability and health-fit check before payment.
+- Route by fit instead of forcing the Founders Pass: structured six-week starting course -> Founders Pass; self-directed ongoing app/community -> App + Community; ongoing personalised weekly progression and review -> Online Coaching; live supervised workouts -> 1:1 Zoom PT. The Founders Pass and Online Coaching both include one weekly review during the first six weeks, but Founders follows the fixed Balance Learn curriculum and ends after six weeks while Online Coaching continues at the selected tier until cancelled. Use `https://balanceneurosciencefitness.com/coaching.html` for package comparison. Zoom PT requires an availability and health-fit check before payment.
 
 ## Private organic coached month, 24 October 2026
 
@@ -221,7 +225,7 @@ Shannon is currently running a live six-week Balance challenge. Keep its partici
 Canonical Balance Learn Founders Pass signup path:
 
 1. Explain the fit as one AUD $149 payment for the full six weeks inside the DM. Be clear that it is a six-week course with one weekly check-in and plan review, six weeks of app/community access, and no automatic renewal. Ongoing access after week six is separate.
-2. When the lead asks for details, accepts, or says they are ready, send the clean public URL `https://plantbased-balance.org/founders`.
+2. When the lead asks for details, accepts, or says they are ready, send the clean public URL `https://balanceneurosciencefitness.com/founders`.
 3. The branded Founders Pass page gives a clear offer summary and starts a Stripe-hosted one-time Checkout Session after legal acceptance.
 4. Stripe webhook-backed payment is the sale; then onboarding continues through Balance.
 

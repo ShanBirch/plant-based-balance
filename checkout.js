@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
         checkoutButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
-                alert("Please open plantbased-balance.org/coaching.html in Safari or Chrome to choose and purchase a website plan.");
+                alert("Please open balanceneurosciencefitness.com/coaching.html in Safari or Chrome to choose and purchase a website plan.");
             });
         });
 
