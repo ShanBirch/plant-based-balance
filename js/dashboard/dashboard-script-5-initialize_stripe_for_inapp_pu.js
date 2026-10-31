@@ -1338,7 +1338,7 @@ function setOnboardingNavigationGate(locked) {
 
 // Real switchAppTab implementation - replaces the early stub
 function _switchAppTabReal(tabName, btn) {
-    if (tabName === 'learning' && window.BalanceFreeStarter?.coached?.()) {
+    if (tabName === 'learning' && (window.BalanceFreeStarter?.coached?.() || window.BalanceFreeStarter?.standardText?.())) {
         window.showToast?.('Your free coaching month includes Inbox, workouts and meal planning. The course is separate.', 'info');
         return false;
     }
@@ -10378,7 +10378,7 @@ async function checkAndTriggerOnboarding() {
                 ? await window.getUserProfile()
                 : await dbHelpers.users.get(window.currentUser.id);
             databaseOnboardingStatusChecked = true;
-            if (['active', 'trialing'].includes(userData?.subscription_status)) window.__balancePaidTourExemptUserId = window.currentUser.id;
+            if (userData?.subscription_plan!=='standard_text_coaching_weekly' && ['active', 'trialing'].includes(userData?.subscription_status)) window.__balancePaidTourExemptUserId = window.currentUser.id;
             savedSetupComplete = userData?.onboarding_complete === true;
             if (savedSetupComplete) {
                 localStorage.setItem('onboardingComplete', 'true');

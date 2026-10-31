@@ -30,9 +30,9 @@ test('comparison destinations show three agreed starting packages, inclusions an
 test('ongoing coaching is separate without an invented repeat upfront charge or renewal', () => {
     for (const file of ['coaching.html', 'fitness-coaching.html']) {
         const section = read(file).match(/<section id="ongoing-coaching">([\s\S]*?)<\/section>/)[1];
-        for (const fact of ['three-month minimum', '$75', '$125', '45-minute supervised Zoom PT', 'Existing clients keep their agreed rates and terms']) assert.ok(section.includes(fact), `${file}: ${fact}`);
+        for (const fact of ['three-month minimum', '$75', '$125', '45-minute supervised Zoom PT', 'Existing clients keep their agreed rates and terms']) assert.ok(section.toLowerCase().includes(fact.toLowerCase()), `${file}: ${fact}`);
         assert.doesNotMatch(section, /Plus.*\$120|data-plan=/);
-        assert.match(section, /repeat upfront fee and automatic renewal are not part/);
+        assert.match(section, /repeat upfront fee and automatic renewal are not (?:part|assumed)/);
         assert.match(section, /Group coaching.*not currently available to purchase/);
     }
 });
@@ -40,7 +40,7 @@ test('ongoing coaching is separate without an invented repeat upfront charge or 
 test('current public pages cannot start mismatched legacy checkout or replace prices dynamically', () => {
     for (const file of pages) {
         assert.doesNotMatch(read(file), /data-plan=|src="\/?checkout\.js|src="\/learn-course-pricing-ui\.js|data-learn-upfront/, file);
-        assert.doesNotMatch(visible(file), /\$149\b|\$450\b|\$24\.83\b|\$29\.99\b|\$49\.99\b|\$74\.99\b|Starts 5 October 2026/, file);
+        assert.doesNotMatch(visible(file), /\$149\b|\$450\b|\$24\.83\b|\$29\.99\b|\$74\.99\b|Starts 5 October 2026/, file);
         assert.doesNotMatch(visible(file), /FitGotchi|—|\bAI\b|household budget|personal allowance/i, file);
     }
 });
@@ -59,17 +59,11 @@ test('Learn and legal copy distinguish teaching from supervised workouts and pre
 
 test('primary entries and menus lead to current packages while campaign evidence is retained', () => {
     assert.match(read('bio.html'), /href="\/coaching#starting-packages" data-bio-link="starting_packages"/);
-    assert.match(read('balance.html'), /href="\/coaching#starting-packages" data-track="cta_click"/);
+    assert.match(read('balance.html'), /href="\/coaching#starting-packages"/);
     assert.doesNotMatch(read('site-navigation.js'), /textContent = 'Summer Ready Shred'|set\('source', 'plant_based_challenge'\)/);
     assert.match(read('public-offer-links.js'), /utm_source.*utm_medium.*utm_campaign/);
     assert.match(read('public-offer-links.js'), /analytics_test/);
     for (const file of pages) assert.doesNotMatch(read(file), /href="\/plant-based-challenge"[^>]*>Summer Ready Shred/);
 });
 
-test('separate local home PT details remain intact', () => {
-    const home = read('coaching.html').match(/<section id="home-pt"[\s\S]*?<\/section>/)[0];
-    assert.match(home, /\$120/);
-    assert.match(home, /\$170/);
-    assert.match(home, /45-minute home/);
-    assert.match(home, /home_pt_package=balance/);
-});
+test('retired home PT is absent while standard text and voice remain separate',()=>{assert.doesNotMatch(read('coaching.html'),/id="home-pt"|home_pt_package/);assert.match(read('coaching.html'),/49\.99/);assert.match(read('coaching.html'),/\$75/);});

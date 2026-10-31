@@ -40,3 +40,6 @@ Before enabling payment for the new offers, Shannon must specify/authorise the c
 ## Verification
 
 Run the focused marketing, funnel tracking, checkout hardening, legacy Learn pricing, client-session and public/home consultation booking tests. Browser QA covers small portrait, larger portrait, landscape and desktop; light/dark settings; zero and nonzero safe areas; opening, scrolling, return/reopen, package-to-booking navigation and attribution. Generated screenshots and reports belong in ignored `output/`, not the published source diff.
+
+## New standard text membership, 1 November 2026
+Shannon authorised a separate AUD49.99/week membership: meal plan, weekly programme updates, weekly text check-in and app access. The confirmed initial term is three months, implemented as 13 weekly payments (AUD649.87 minimum), then weekly until cancelled. No upfront fee or additional notice period. The AUD75 voice tier remains separate; the private AUD14.70 continuation keeps its own eligibility and terms. New exact Stripe price: price_1UWlnXCGCyRUsOfKeq1Kn01q, plan standard_text_coaching_weekly. Fulfilment creates only a normal coaching relationship after verified paid invoice and queues a setup review; it creates no free grant, outreach cohort, optional-message consent or auto-send entitlement. Existing agreements cannot buy through this self-serve route.

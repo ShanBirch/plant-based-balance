@@ -579,6 +579,10 @@
 
         function signupEntryParams() {
             const params = new URLSearchParams(window.location.search);
+            if(params.get('redirect')==='/text-coaching.html'){
+                ['account_first','meta_trial','meta_preview','learn_entry','fresh_preview','guest'].forEach(key=>params.delete(key));
+                return params;
+            }
             if (hasPendingFreeStarter()) {
                 ['account_first','meta_trial','meta_preview','learn_entry','fresh_preview','guest'].forEach(key => params.delete(key));
                 return params;

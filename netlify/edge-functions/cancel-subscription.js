@@ -76,7 +76,7 @@ function subscriptionSummary(subscription, nowSeconds = Math.floor(Date.now() / 
         estimatedCancellationAt: scheduledAt || timing.effectiveAt,
         pauseUntil: pauseUntil > nowSeconds ? pauseUntil : null,
         pauseUsedAt,
-        pauseAvailable: subscription.metadata?.balance_plan !== "balance_learn_weekly" && !pauseUsedAt && !scheduledAt && !(pauseUntil > nowSeconds),
+        pauseAvailable: !['balance_learn_weekly','standard_text_coaching_weekly'].includes(subscription.metadata?.balance_plan) && !pauseUsedAt && !scheduledAt && !(pauseUntil > nowSeconds),
     };
 }
 
@@ -172,6 +172,9 @@ export default async (request) => {
             const params = new URLSearchParams();
             if (subscription.metadata?.balance_plan === "organic_coaching_continuation_weekly") {
                 params.set("cancel_at_period_end", "true");
+            } else if(subscription.metadata?.balance_plan==='standard_text_coaching_weekly') {
+                const periodEnd=cleanInteger(subscription.current_period_end||subscription.items?.data?.[0]?.current_period_end);
+                if(timing.effectiveAt>periodEnd)params.set('cancel_at',String(timing.effectiveAt));else params.set('cancel_at_period_end','true');
             } else if (subscription.metadata?.balance_plan === "balance_learn_weekly") {
                 // Remove future phase changes before cancelling at the paid boundary.
                 if (subscription.schedule) {

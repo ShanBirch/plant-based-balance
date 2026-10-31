@@ -8,9 +8,9 @@ export async function verifyOrganicContinuation(subscription,query){
  if(m.balance_plan!==ORGANIC_PLAN||m.paid_agreement!=='explicit_checkout_20261101'||!m.user_id||items.length!==1||id(items[0].price)!==ORGANIC_PRICE||items[0].quantity!==1||await query('rpc/organic_outreach_cohort_allowed',{method:'POST',body:{p_user_id:m.user_id}})!==true)throw Object.assign(new Error('Organic continuation identity, agreement, price or cohort could not be verified'),{organicContinuation:true});
 }
 // Resolve risk events through Stripe resources, never customer-supplied metadata.
-export async function organicBillingSubscriptions(event,read){
+export async function organicBillingSubscriptions(event,read,accept=isOrganicContinuation){
  const obj=event.data.object,subscriptions=new Map();
- const addInvoice=async invoice=>{const sid=id(invoice?.parent?.subscription_details?.subscription||invoice?.subscription);if(sid){const sub=await read('subscriptions/'+encodeURIComponent(sid));if(isOrganicContinuation(sub))subscriptions.set(sub.id,sub);}};
+ const addInvoice=async invoice=>{const sid=id(invoice?.parent?.subscription_details?.subscription||invoice?.subscription);if(sid){const sub=await read('subscriptions/'+encodeURIComponent(sid));if(accept(sub))subscriptions.set(sub.id,sub);}};
  if(event.type==='invoice.payment_failed'){await addInvoice(obj);return [...subscriptions.values()];}
  if(!['charge.refunded','charge.dispute.created','radar.early_fraud_warning.created'].includes(event.type))return [];
  let pi=id(obj.payment_intent);

@@ -16,6 +16,11 @@ exports.handler = async function (event) {
         let body;
         try { body = JSON.parse(event.body || '{}'); } catch (_) { return response(400, { error: 'Invalid request.' }); }
         const profiles = await supabaseQuery(`users?id=eq.${encodeURIComponent(user.id)}&select=subscription_status,subscription_plan&limit=1`);
+        if(profiles?.[0]?.subscription_plan==='standard_text_coaching_weekly'&&profiles[0].subscription_status==='active'){
+            const links=await supabaseQuery(`stripe_subscription_links?user_id=eq.${encodeURIComponent(user.id)}&subscription_plan=eq.standard_text_coaching_weekly&stripe_price_id=eq.price_1UWlnXCGCyRUsOfKeq1Kn01q&subscription_status=eq.active&current_period_end=gt.${encodeURIComponent(new Date().toISOString())}&select=id&limit=1`);
+            if(!links?.length)return response(409,{error:'Your paid text membership could not be verified. Please ask Shannon.'});
+            return response(200,{starter:null,alreadyMember:true,standardText:true});
+        }
         const paidContinuation = profiles?.[0]?.subscription_plan === 'organic_coaching_continuation_weekly'
             && await supabaseQuery('rpc/organic_outreach_paid_continuation_allowed',{method:'POST',body:{p_user_id:user.id}}) === true;
         if (!paidContinuation && ['active', 'trialing', 'paid', 'paying'].includes(profiles?.[0]?.subscription_status)) {

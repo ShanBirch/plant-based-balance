@@ -208,7 +208,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 <script src="js/dashboard/script_part_1.js"></script>
 <!-- Paid-Facebook preview attribution must be available before auth-guard decides guest vs member mode. -->
 <script src="lib/onboarding-progress.js?v=11-coached-month"></script>
-<script src="lib/free-starter.js?v=12-private-text-checkins"></script>
+<script src="lib/free-starter.js?v=13-standard-text-membership"></script>
 <script src="lib/meta-ad-trial.js?v=35-free-starter"></script>
 
 <!-- CRITICAL: Hide loading overlay for returning users and restore cached FitGotchi state -->
@@ -657,6 +657,7 @@ html.pbb-coached-month #social-journey-card { display:none!important; }
 </style>
 <link rel="stylesheet" href="css/dashboard/pbb-coaching-support.css?v=20261101-v1">
 <script defer src="js/dashboard/pbb-coaching-support.js?v=20261101-v1"></script>
+<script defer src="js/dashboard/pbb-onboarding-review-entry.js?v=20261101-v1"></script>
 </head>
 <body>
 <script>if(window._crumb)window._crumb('body_start');</script>
@@ -12616,7 +12617,7 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
                 <details class="settings-v2-more">
                     <summary><span>Guides, replays &amp; app refresh</span><small>Less-used support tools</small></summary>
                     <div class="settings-v2-tools">
-                        <button type="button" onclick="initOnboardingWizard()"><span>🌸</span>Restart onboarding setup</button>
+                        <button id="settings-onboarding-review" type="button" onclick="openOnboardingReview()"><span>🌸</span>Restart onboarding setup</button>
                         <button type="button" onclick="replayFeatureTour()"><span>💡</span>Replay app tour</button>
                         <button id="btn-replay-weekly-wrapped" type="button" onclick="replayWeeklyWrapped()"><span>🎞️</span>Replay month wrapped</button>
                         <button type="button" onclick="openRareRewardsModal()"><span>🏆</span>View rare collection</button>
@@ -13009,7 +13010,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261101-coaching-support-v1&cohort_diets=1&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261101-standard-text-v2&cohort_diets=1&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13051,7 +13052,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261101-coaching-support-v1&cohort_diets=1&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261101-standard-text-v2&cohort_diets=1&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13070,7 +13071,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261101-coaching-support-v1"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261101-standard-text-v2"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=18-workout-messages"></script>
@@ -13969,6 +13970,7 @@ if(!window._pbbIsIOSSafari) {
     </div>
   </div>
 </div>
+</script><!-- end tmpl-onboarding -->
 <script>
 (function(){
   function getMetaPreviewStrengthDayIndex(){
@@ -14178,6 +14180,7 @@ if(!window._pbbIsIOSSafari) {
   }
 
   const steps = [
+    { tab:'movement-tab',sel:'#today-workout-card',condition:()=>window.BalanceFreeStarter?.standardText?.()===true,title:'Your plan and weekly text review',body:'Your membership includes a meal plan, weekly programme updates and a weekly text check-in with Shannon. Finish your setup so Shannon can review it. Voice check-ins and live sessions are separate.' },
     { tab:'profile', sel:'#settings-coaching-support', condition:()=>window.BalanceCoachingSupport?.isEligible()===true, title:'Support that suits you', body:'Choose optional morning messages on saved training days, after-session check-ins, and a gentle or firmer tone. Both switches start off. Weekly check-ins remain; change your choices anytime.' },
     {tab:'home',sel:'.header-msg-icon',title:'Your check-in, with a clear next step',body:'When Shannon attaches a weekly progress card to your check-in, open View progress beneath his text or voice note. See that week’s recorded sets and your reviewed next targets inside Balance.'},
     { tab:'learning', sel:'#learning-content', title:'Send Master videos through your usual chat', body:'In Master Week 2, send your squat, hinge, push and pull clips to Shannon on Instagram or your usual messaging platform. Record where and when you sent each clip, then save it in the course.' },
@@ -14462,6 +14465,7 @@ if(!window._pbbIsIOSSafari) {
   });
 
   function requiredOnboardingTourSteps(){
+    if(window.BalanceFreeStarter?.standardText?.()) return REQUIRED_ONBOARDING_TOUR_TITLES.map(findTourStep).filter(step=>step&&step.tab!=='learning').map(step=>step.checkinExplainerGuide?{tab:'dashboard',sel:'#next-obvious-steps-card',title:'Your weekly text check-in',body:'Shannon reviews your week in a text check-in. Keep your meals, workouts and goals up to date. Finish setup so Shannon can review your programme and meal plan.',metaPreview:true}:step);
     if (window.BalanceFreeStarter?.supportOnly?.()) return [
       {tab:'dashboard',sel:'#next-obvious-steps-card',title:'Your weekly check-ins',body:'Keep your current training with your trainer. Open Message on Home takes you to Shannon in Inbox for messages and weekly check-ins.',metaPreview:true}
     ];
@@ -16128,6 +16132,10 @@ if (step && step.requiresFeedPost) {
       } catch(e) {}
     }
     if (window.BalanceFreeStarter?.active() && list) list.innerHTML = '<li><span><strong>Your free starter:</strong> two home workouts after setup review, meal tools and the course.</span></li><li><span><strong>Your community:</strong> look around and introduce yourself if you want to.</span></li><li><span><strong>Your course:</strong> complete your first lesson and quiz.</span></li><li><span><strong>Your week:</strong> choose realistic goals. Ongoing coaching is optional.</span></li>';
+    if(window.BalanceFreeStarter?.standardText?.()) {
+      if(intro)intro.textContent='Find your workouts, meals and weekly text check-in. Shannon reviews your setup before confirming your programme.';
+      if(list)list.innerHTML='<li><span><strong>Your plan:</strong> workouts and meal planning.</span></li><li><span><strong>Your support:</strong> one weekly text check-in.</span></li><li><span><strong>Your week:</strong> realistic goals and tracking.</span></li>';
+    }
     if (window.BalanceFreeStarter?.coached?.()) {
       if (intro) intro.textContent = 'Your profile is saved. Here is where to find your prepared program, messages and meal planning.';
       if (list) list.innerHTML = '<li><span><strong>Inbox:</strong> messages and weekly check-ins with Shannon.</span></li><li><span><strong>Movement:</strong> your prepared workout program.</span></li><li><span><strong>Nutrition:</strong> your meal planning tools.</span></li>';
@@ -16327,7 +16335,7 @@ window.endFeatureTour = function(skipped){
     window.__balanceClientActivationTour = clientActivationTour;
     window.__balancePendingClientActivation = clientActivationTour;
     activeSteps = courseFeatureTour ? fitgotchiCourseSteps : steps.filter(function(s){
-      if (window.BalanceFreeStarter?.coached?.() && s.tab === 'learning') return false;
+      if ((window.BalanceFreeStarter?.coached?.() || window.BalanceFreeStarter?.standardText?.()) && s.tab === 'learning') return false;
       if (s.clientActivationOnly && !clientActivationTour) return false;
       return !s.condition || s.condition();
     });
@@ -17333,6 +17341,7 @@ window.endFeatureTour = function(skipped){
   // First-run onboarding now uses the guided walkthrough only. Keep legacy
   // feature-drop entries dormant so users do not see duplicate spotlight cards.
   allFeatures = [];
+  allFeatures.push({ id:'standard-text-membership-20261101-v1',tab:'movement-tab',sel:'#today-workout-card',condition:()=>window.BalanceFreeStarter?.standardText?.()===true,title:'Your plan and weekly text review',body:'Your membership includes a meal plan, weekly programme updates and a weekly text check-in with Shannon. Finish your setup so Shannon can review it. Voice check-ins and live sessions are separate.' });
   allFeatures.push({ id:'master-external-videos-20261008', tab:'learning', sel:'#learning-content', title:'Send Master videos through your usual chat', body:'In Master Week 2, send your squat, hinge, push and pull clips to Shannon on Instagram or your usual messaging platform. Record where and when you sent each clip, then save it in the course.' });
   allFeatures.push({id:'learn-ten-week-learning-only-20261008',tab:'learning',sel:'#learning-content',title:'Learn at a steadier pace',body:'Balance Learn now has ten weeks, with six lessons in Week 1 and four or five in later weeks. Read the lessons, answer the quizzes and continue at your pace. Practical course tasks are paused, and your completed lessons still count.'});
   allFeatures.push({ id:'learn-brain-basics-20261008', tab:'learning', sel:'#learning-content', title:'Meet your brain first', body:'Week 1 introduces the researchers, how your experience is constructed, then the brain, brain cells, messages and senses. Week 2 explores prediction in more detail. Your completed lessons still count.' });
@@ -18343,7 +18352,7 @@ window.endFeatureTour = function(skipped){
     revealSteps = allFeatures.filter(function(f) {
       if (requestedIds.length && requestedIds.indexOf(f.id) === -1) return false;
       if (seen.indexOf(f.id) !== -1) return false;
-      if (window.BalanceFreeStarter?.coached?.() && f.tab === 'learning') return false;
+      if ((window.BalanceFreeStarter?.coached?.() || window.BalanceFreeStarter?.standardText?.()) && f.tab === 'learning') return false;
       if (f.condition && !f.condition()) return false;
       return true;
     });
@@ -19146,7 +19155,7 @@ window.endFeatureTour = function(skipped){
         </div>
     </div>
 </div>
-</script><!-- end tmpl-onboarding -->
+
 
 <link rel="stylesheet" href="css/dashboard/dashboard-style-2.css?v=16" id="pbb-style2">
 <script>
@@ -19303,7 +19312,7 @@ if (typeof WORKOUT_LIBRARY !== 'undefined' && typeof WORKOUT_LIBRARY_EXTENDED !=
     WORKOUT_LIBRARY.home = WORKOUT_LIBRARY_EXTENDED.home;
 }
 </script>
-<script src="js/dashboard/pbb-exercise-video-backups.js?v=2"></script>
+<script src="js/dashboard/pbb-exercise-video-backups.js?v=3-srcdoc"></script>
 <script>
 // Script-7 (29KB) - video logic. Defer on iOS to reduce memory pressure.
 var pbbVideoLogicSrc = 'js/dashboard/dashboard-script-7-video_logic.js?v=20261005-set-options';

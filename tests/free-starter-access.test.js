@@ -96,6 +96,22 @@ function endpoint({authOk=true, anonymous=false, rows=[], profiles=[], programs=
     });
     return {handler:exports.handler,calls};
 }
+test('standard text membership requires its live billing link and never claims a free grant',async()=>{
+ for(const linked of [true,false]){
+  const e=endpoint({profiles:[{subscription_status:'active',subscription_plan:'standard_text_coaching_weekly'}],rows:linked?[{id:'paid-link'}]:[]});
+  const r=await e.handler({httpMethod:'POST',headers:{authorization:'Bearer test'},body:'{}'});
+  assert.equal(r.statusCode,linked?200:409);
+  if(linked)assert.deepEqual(JSON.parse(r.body),{starter:null,alreadyMember:true,standardText:true});
+  assert.equal(e.calls.some(x=>x[0].startsWith('rpc/')),false);
+ }
+});
+test('standard text marker is account-bound and distinct from free coaching and course access',async()=>{
+ const w=client({ok:true,json:async()=>({starter:null,alreadyMember:true,standardText:true})});
+ await w.BalanceFreeStarter.resolve({user:{id:'jessie'},access_token:'test'});
+ assert.equal(w.BalanceFreeStarter.standardText(),true);assert.equal(w.BalanceFreeStarter.active(),false);assert.equal(w.BalanceFreeStarter.coached(),false);
+ assert.equal(w.BalanceFreeStarter.allowsAction({id:'quiz'}),false);assert.equal(w.BalanceFreeStarter.allowsAction({id:'nutrition_tracker_intro'}),true);
+ w.currentUser={id:'another'};assert.equal(w.BalanceFreeStarter.standardText(),false);
+});
 test('only verified new paid continuation carries the existing coaching programme beyond the free term',async()=>{
  const grant={id:'grant',experience:'coached_month_v1',workouts_ready:true,starts_at:'2026-01-01',ends_at:'2026-02-01',setup:{schedule:[{weekday:1}]}};
  for(const allowed of [true,false]){

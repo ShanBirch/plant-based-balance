@@ -4,6 +4,12 @@
 
 Use https://balanceneurosciencefitness.com for all new Balance websites and public links. This supersedes historical plantbased-balance.org destinations below. Preserve legacy technical connections and email until individually migrated. See docs/BALANCE_DOMAIN_POLICY.md.
 
+## Standard text membership and existing Settings onboarding review, 1 November 2026
+
+The separately authorised standard text membership is AUD49.99/week: meal plan, weekly programme updates, weekly TEXT check-in and app access. Initial minimum: three months implemented as 13 weekly payments (AUD649.87), then weekly until cancelled; no upfront fee or extra notice. Keep AUD75 voice support, other agreements and the private AUD14.70 no-minimum continuation separate. See docs/current-coaching-offers-20261021.md. Standard purchase creates no free/outreach cohort, optional reminder consent, Dot or auto-send permission.
+
+Use the EXISTING Settings > Guides, replays & app refresh > View onboarding action for Shannon to review canonical setup and guided tour. It opens the actual dashboard in an administrator-verified isolated frame. No duplicate Settings entry, real account reset or persistent programme/consent writes. Other completed members are not forced through onboarding. See docs/actual-onboarding-replay.md.
+
 ## App diagnostics (26 October 2026)
 
 For app problems, read `docs/startup-error-debugging.md` and query current

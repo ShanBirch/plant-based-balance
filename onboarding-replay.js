@@ -13,13 +13,15 @@
   // Opaque-origin iframe: it cannot access this page's account storage, cookies,
   // real session or parent DOM. Only reviewed static GET assets cross the bridge.
   window.addEventListener('message',async event=>{
-   if(event.source!==frame.contentWindow||event.data?.type!=='balance_preview_asset'||!event.ports[0])return;
+   if(event.source!==frame.contentWindow)return;
+   if(event.data?.type==='balance_preview_exit'){location.replace('/dashboard.html?review_return=settings');return;}
+   if(event.data?.type!=='balance_preview_asset'||!event.ports[0])return;
    const port=event.ports[0];try{const url=new URL(event.data.path,location.origin);
     if(url.origin!==location.origin||/\/(?:api|\.netlify)\//.test(url.pathname)||! /\.(?:json|js|css|glb|gltf|png|jpe?g|webp|svg|mp4|mp3|woff2?)(?:$)/i.test(url.pathname))throw Error('Preview only');
     const result=await fetch(url,{method:'GET',credentials:'omit'});const data=await result.arrayBuffer();port.postMessage({status:result.status,contentType:result.headers.get('content-type'),data},[data]);
    }catch{port.postMessage({status:503,error:'Preview only. This request was not sent.'});}finally{port.close();}
   });
-  const html=await source.text();frame.srcdoc=html.replace(/<head>/i,'<head><base href="'+location.origin+'/"><meta http-equiv="Content-Security-Policy" content="'+csp+'"><script src="/js/dashboard/pbb-onboarding-replay-sandbox.js?v=20261101-v1"></script>');
+  const html=await source.text();frame.srcdoc=html.replace(/<head>/i,'<head><base href="'+location.origin+'/"><meta http-equiv="Content-Security-Policy" content="'+csp+'"><script src="/js/dashboard/pbb-onboarding-replay-sandbox.js?v=20261101-v2"></script>');
   document.body.replaceChildren(frame);
  }catch(error){status.textContent=error.message;const login=document.createElement('a');login.href='/login.html?switch_account=1&redirect='+encodeURIComponent('/dashboard.html?onboarding_replay=1');login.textContent='Sign in as Shannon';status.append(document.createElement('br'),login);}
 })();
