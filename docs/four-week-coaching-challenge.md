@@ -41,8 +41,9 @@ retrospective pitch, silence chase, customer test or unsolicited batch blast.
 
 Week 1: establish the agreed manageable routine and review the first experience.
 Weeks 2-3: review actual training/food evidence and adapt to their real week.
-Week 4: review progress and whether ongoing support fits; offer paid continuation
-only in that relevant conversation, with explicit agreement and verified payment.
+After actual product use and time to judge value, review whether ongoing support fits.
+A contextual optional offer may follow at a suitable later point, with verified terms,
+separate explicit paid agreement and verified payment. No fixed week/session trigger.
 No automatic billing, subscription creation, or reminder-consent assumption.
 
 The status RPC reports accepted reservations, queued/prepared setups, claimed
