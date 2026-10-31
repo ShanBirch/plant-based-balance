@@ -1,0 +1,34 @@
+(function(){
+ 'use strict';window.__PBB_ONBOARDING_REPLAY__=true;
+ const uid='00000000-0000-4000-8000-000000000001';
+ const user={id:uid,email:'preview@invalid.test',user_metadata:{name:'Shannon'},app_metadata:{}};
+ const session={access_token:'preview-only-not-a-real-token',refresh_token:'preview-only',expires_in:86400,expires_at:Math.floor(Date.now()/1000)+86400,user};
+ const tables={users:[{id:uid,email:user.email,name:'Shannon',onboarding_complete:false,subscription_status:'active',subscription_plan:'onboarding_preview',is_test_account:false}],user_facts:[],quiz_results:[],coaching_support_preferences:[]};
+ const writes=[];window.BalanceOnboardingReplay={writes,tables,uid};
+ function memoryStorage(){const m=new Map();return{getItem:k=>m.has(String(k))?m.get(String(k)):null,setItem:(k,v)=>m.set(String(k),String(v)),removeItem:k=>m.delete(String(k)),clear:()=>m.clear(),key:i=>[...m.keys()][i]||null,get length(){return m.size;}};}
+ for(const key of ['localStorage','sessionStorage'])Object.defineProperty(window,key,{value:memoryStorage(),configurable:false});
+ localStorage.setItem('pbb_onboarding_owner_user_id',uid);localStorage.setItem('subscription_status','active');
+ try{Object.defineProperty(document,'cookie',{get:()=>'',set:()=>true});}catch{}
+ function query(table){let rows=tables[table]||[],one=false,mutation=null,body=null;const filters=[];
+  const q={select:()=>q,eq:(k,v)=>{filters.push(r=>r[k]===v);return q;},neq:(k,v)=>{filters.push(r=>r[k]!==v);return q;},in:(k,v)=>{filters.push(r=>v.includes(r[k]));return q;},is:(k,v)=>{filters.push(r=>r[k]===v);return q;},order:()=>q,limit:()=>q,range:()=>q,gte:()=>q,lte:()=>q,gt:()=>q,lt:()=>q,or:()=>q,filter:()=>q,contains:()=>q,match:()=>q,
+   insert:v=>{mutation='insert';body=v;return q;},upsert:v=>{mutation='upsert';body=v;return q;},update:v=>{mutation='update';body=v;return q;},delete:()=>{mutation='delete';return q;},single:()=>{one=true;return q;},maybeSingle:()=>{one=true;return q;},
+   then:(resolve,reject)=>Promise.resolve().then(()=>{let data=rows.filter(r=>filters.every(f=>f(r)));if(mutation){writes.push({table,operation:mutation});if(mutation==='insert'||mutation==='upsert'){data=(Array.isArray(body)?body:[body]).map(r=>({id:crypto.randomUUID(),...r}));tables[table]=[...rows,...data];}else if(mutation==='update'){data.forEach(r=>Object.assign(r,body));}else{tables[table]=rows.filter(r=>!data.includes(r));data=[];}}return{data:one?(data[0]||null):data,error:null,count:data.length};}).then(resolve,reject)};return q;
+ }
+ const channel={on(){return this;},subscribe(){return this;},unsubscribe:async()=>{},send:async()=>({status:'ok'}),track:async()=>{}};
+ const client={auth:{getSession:async()=>({data:{session},error:null}),getUser:async()=>({data:{user},error:null}),onAuthStateChange:fn=>{setTimeout(()=>fn('INITIAL_SESSION',session),0);return{data:{subscription:{unsubscribe(){}}}};},signOut:async()=>({error:null}),refreshSession:async()=>({data:{session},error:null})},from:query,
+  rpc:async(name,args)=>{if(name==='my_outreach_support_eligibility')return{data:true,error:null};if(name==='save_coaching_support_preferences'){const p={user_id:uid,morning_training:args.p_morning,after_session:args.p_after_session,tone:args.p_tone,revision:writes.length+1,consent_source:'preview_only'};tables.coaching_support_preferences=[p];writes.push({rpc:name,previewOnly:true});return{data:p,error:null};}return{data:[],error:null};},
+  channel:()=>channel,getChannels:()=>[],removeChannel:async()=>{},removeAllChannels:async()=>{},storage:{from:()=>({upload:async()=>({data:{path:'preview-only'},error:null}),getPublicUrl:()=>({data:{publicUrl:''}}),remove:async()=>({data:[],error:null})})}};
+ let supabase;Object.defineProperty(window,'supabase',{configurable:true,get:()=>supabase,set:value=>{supabase={...value,createClient:()=>client};}});
+ window.supabase={createClient:()=>client};window.currentUser={...tables.users[0]};
+ // Network mutations never leave the frame. Even if a future write path bypasses
+ // this wrapper, connect-src:none and the opaque sandbox deny it independently.
+ window.fetch=async(input,options={})=>{const method=String(options.method||input?.method||'GET').toUpperCase();const path=String(input?.url||input);if(method!=='GET')return new Response(JSON.stringify({error:'Preview only',preview:true}),{status:503,headers:{'Content-Type':'application/json'}});
+  return new Promise(resolve=>{const c=new MessageChannel();c.port1.onmessage=e=>{const r=e.data;resolve(new Response(r.data||JSON.stringify({error:r.error}),{status:r.status,headers:{'Content-Type':r.contentType||'application/json'}}));c.port1.close();};parent.postMessage({type:'balance_preview_asset',path},'*',[c.port2]);});};
+ window.XMLHttpRequest=class{open(){}setRequestHeader(){}send(){setTimeout(()=>this.onerror?.(new Error('Preview only')),0);}abort(){}};
+ window.WebSocket=class{constructor(){throw Error('Realtime disabled in preview');}};window.EventSource=window.WebSocket;
+ try{Object.defineProperty(navigator,'sendBeacon',{value:()=>false});Object.defineProperty(navigator,'serviceWorker',{value:{register:async()=>{throw Error('Preview only');},getRegistrations:async()=>[],addEventListener(){}}});}catch{}
+ try{Object.defineProperty(window,'indexedDB',{value:{open(){const request={};setTimeout(()=>request.onerror?.({target:{error:Error('Preview only')}}),0);return request;},deleteDatabase(){return this.open();}}});Object.defineProperty(window,'caches',{value:{open:async()=>({match:async()=>undefined,put:async()=>{},delete:async()=>false}),keys:async()=>[],delete:async()=>false,match:async()=>undefined}});}catch{}
+ window.open=()=>null;document.addEventListener('submit',event=>event.preventDefault(),true);document.addEventListener('click',event=>{const link=event.target.closest?.('a[href]');if(link&&!link.getAttribute('href').startsWith('#'))event.preventDefault();},true);
+ const decorate=()=>{const header=document.querySelector('#onboarding-wizard .wizard-header');if(header&&!header.querySelector('[data-replay-label]')){const label=document.createElement('p');label.dataset.replayLabel='true';label.textContent='Preview only · changes are not saved';label.style.cssText='font:600 11px/1.4 system-ui;color:#70551f!important;-webkit-text-fill-color:#70551f!important;margin:4px 0;text-align:center';header.append(label);}if(typeof window.initOnboardingWizard==='function'&&!document.getElementById('onboarding-wizard')?.classList.contains('active'))window.initOnboardingWizard();};
+ document.addEventListener('pbbInitComplete',decorate);document.addEventListener('DOMContentLoaded',()=>{const t=setInterval(()=>{decorate();if(document.querySelector('[data-replay-label]')&&document.getElementById('onboarding-wizard')?.classList.contains('active'))clearInterval(t);},500);setTimeout(()=>clearInterval(t),30000);});
+})();

@@ -544,6 +544,21 @@
 
 # Ensure we redirect legacy URLs
 # Public website domain consolidation. Keep legacy app/API/callback paths working.
+# An admin-verified replay renders the actual dashboard in an isolated frame.
+[[redirects]]
+  from = "/dashboard.html"
+  to = "/onboarding-replay.html"
+  status = 200
+  force = true
+  query = { onboarding_replay = "1" }
+
+[[redirects]]
+  from = "/dashboard"
+  to = "/onboarding-replay.html"
+  status = 200
+  force = true
+  query = { onboarding_replay = "1" }
+
 [[redirects]]
   from = "https://plantbased-balance.org/"
   to = "https://balanceneurosciencefitness.com/"

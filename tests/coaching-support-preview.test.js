@@ -10,11 +10,10 @@ test('preview requires exact Shannon identity and authoritative administrator me
 test('the dedicated tester needs both the server-controlled marker and authoritative test profile',async()=>{
  const event={httpMethod:'GET',headers:{authorization:'Bearer fixture'}},user={id:'76e73c43-d06b-45db-afed-8203dc862752',app_metadata:{balance_support_preview:true}};
  assert.equal((await endpoint(user,false)(event)).statusCode,200);
+ assert.equal((await endpoint(user,false)({...event,queryStringParameters:{replay:'1'}})).statusCode,403);
  assert.equal((await endpoint(user,false,false)(event)).statusCode,403);
  assert.equal((await endpoint({...user,is_anonymous:true},false)(event)).statusCode,403);
  assert.equal((await endpoint({id:user.id,user_metadata:{balance_support_preview:true}},false)(event)).statusCode,403);
  assert.equal((await endpoint({...user,id:'another-test'},false)(event)).statusCode,403);
 });
-test('walkthrough reads real component choices without saving consent or resetting onboarding',()=>{
- const s=fs.readFileSync('coaching-support-preview.js','utf8');assert.match(s,/BalanceCoachingSupport\.read/);assert.doesNotMatch(s,/\.rpc\(|\.save\(|localStorage\.setItem|sessionStorage\.setItem|onboarding_complete/);
-});
+test('old standalone entry leads to the actual administrator replay',()=>{assert.match(fs.readFileSync('coaching-support-preview.html','utf8'),/dashboard\.html\?onboarding_replay=1/);});

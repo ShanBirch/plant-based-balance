@@ -8,7 +8,7 @@ exports.handler=async event=>{
   const r=await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`,{headers:{Authorization:authorization,apikey:process.env.SUPABASE_SERVICE_ROLE_KEY||process.env.SUPABASE_SERVICE_KEY}});
   if(!r.ok)return reply(401,{error:'Please sign in again.'});
   const user=await r.json();
-  if(user.id==='76e73c43-d06b-45db-afed-8203dc862752'&&!user.is_anonymous&&user.app_metadata?.balance_support_preview===true){
+  if(event.queryStringParameters?.replay!=='1'&&user.id==='76e73c43-d06b-45db-afed-8203dc862752'&&!user.is_anonymous&&user.app_metadata?.balance_support_preview===true){
    const profile=await supabaseQuery(`users?id=eq.${encodeURIComponent(user.id)}&select=is_test_account&limit=1`);
    if(profile?.[0]?.is_test_account===true)return reply(200,{adminPreview:true,previewRole:'test',userId:user.id});
   }

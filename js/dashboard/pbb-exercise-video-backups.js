@@ -24,13 +24,13 @@ window.resolveExerciseVideoSource = function (value) {
     const url = new URL(value, window.location.href);
     url.hash = ''; url.search = '';
     const backup = window.PBB_EXERCISE_VIDEO_BACKUPS[url.href];
-    if (backup && new URL(backup, window.location.href).origin === window.location.origin) {
-      return new URL(backup, window.location.href).href;
+    if (backup && new URL(backup, document.baseURI || window.location.href).origin === window.location.origin) {
+      return new URL(backup, document.baseURI || window.location.href).href;
     }
   } catch (_) {}
   return value;
 };
 // Keep the independent host available if the preferred source fails.
 for (const [primary, backup] of Object.entries(window.PBB_EXERCISE_VIDEO_BACKUPS)) {
-  window.PBB_EXERCISE_VIDEO_BACKUPS[new URL(backup, window.location.href).href] = primary;
+  window.PBB_EXERCISE_VIDEO_BACKUPS[new URL(backup, document.baseURI || window.location.href).href] = primary;
 }
