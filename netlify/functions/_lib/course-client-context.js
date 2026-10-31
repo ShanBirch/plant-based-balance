@@ -5,6 +5,8 @@ async function loadCourseClientContext(userId, query) {
     if (!userId) return '';
     const id = encodeURIComponent(userId);
     const specs = {
+        support_cohort: `rpc/organic_outreach_cohort_allowed?p_user_id=${id}`,
+        support: `coaching_support_preferences?select=morning_training,after_session,tone,consent_source,consent_version,consent_at,revision&user_id=eq.${id}&limit=1`,
         starter: `balance_free_starters?select=experience,starts_at,ends_at&user_id=eq.${id}&revoked_at=is.null&limit=1`,
         account: `users?select=onboarding_complete,subscription_status,subscription_plan&id=eq.${id}&limit=1`,
         purchase: `founders_pass_purchases?select=status,purchased_at,metadata&user_id=eq.${id}&order=purchased_at.desc&limit=1`,
@@ -20,9 +22,16 @@ async function loadCourseClientContext(userId, query) {
 }
 
 function buildCourseClientContext(data) {
+    if(data.support_cohort!==true) return buildCourseClientContextBase(data);
+    const s=data.support?.[0];
+    const support = s ? `APP SUPPORT CHOICES: morning on saved training days=${s.morning_training===true}; after an actual logged session=${s.after_session===true}; tone=${s.tone==='direct'?'respectful firmer/direct':'gentle'}; app consent revision=${s.revision}; recorded=${s.consent_at}. Tone is not contact consent. Both off means weekly check-ins only. Use only the selected existing event path after fresh native identity, app/program, opt-out, live conversation and ownership review. No silence chase, shame or unrestricted linked-client replies. Weekly/program/injury/sensitive matters stay with Shannon.` : 'APP SUPPORT CHOICES: no verified saved app preference. Do not infer optional contact consent.';
+    return buildCourseClientContextBase(data)+'\n'+support;
+}
+
+function buildCourseClientContextBase(data) {
     if (data.starter?.[0]?.experience === 'coached_month_v1' && !['active','trialing','paid','paying'].includes(data.account?.[0]?.subscription_status)) {
         const starter = data.starter[0];
-        return `LIVE COACHING MONTH CONTEXT: This member entered the private first-month-free coaching flow. Included access: assigned workout program, Inbox messages and weekly coaching check-ins, meal planning and app/community. The course is not included; never direct this member to lessons, quizzes, course tasks or workout-building onboarding. Basic profile and dietary preferences remain relevant. Start: ${starter.starts_at || 'not yet claimed'}; end: ${starter.ends_at || 'not yet started'}. Continued coaching is AUD $14.99/week only after explicit agreement and verified payment. No automatic charge. Check current dates before describing the free month as active. Preserve the agreed schedule from the prepared plan; ask only about genuine gaps or changes.`;
+        return `LIVE COACHING MONTH CONTEXT: This member entered the private first-month-free coaching flow. Included access: assigned workout program, Inbox messages and weekly coaching check-ins, meal planning and app/community. The course is not included; never direct this member to lessons, quizzes, course tasks or workout-building onboarding. Basic profile and dietary preferences remain relevant. Start: ${starter.starts_at || 'not yet claimed'}; end: ${starter.ends_at || 'not yet started'}. New optional organic free-challenge continuation is AUD $14.70/week, only after actual product use and time to judge value, when genuinely relevant to member feedback and support needs; no proactive paid pitch during free enrolment/onboarding. Preserve promised free access and existing agreements. Separate explicit paid agreement and a verified matching payment path are required. Stripe reconnect is needed before a dedicated matching continuation checkout is verified; never reuse unrelated checkout. No automatic charge. Check current dates before describing the free month as active. Preserve the agreed schedule from the prepared plan; ask only about genuine gaps or changes.`;
     }
     const journey = data.journey?.[0];
     const enrollment = data.enrollment?.[0];

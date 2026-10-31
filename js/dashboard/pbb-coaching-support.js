@@ -27,7 +27,7 @@
           <p class="support-eyebrow">YOUR COACHING, YOUR CHOICE</p>
           <h3>How would you like me to support you?</h3>
           <p>Choose optional coaching messages from Shannon in your linked Instagram chat as you settle in. We'll confirm the link first if needed. Extra messages may taper; your weekly check-ins stay in place.</p>
-          <label class="support-choice"><span><strong>A morning message</strong><small>On your saved training days — no need to choose them again.</small></span><input id="${prefix}-morning" type="checkbox" role="switch" aria-label="Morning message on saved training days"></label>
+          <label class="support-choice"><span><strong>A morning message</strong><small>On your saved training days. no need to choose them again.</small></span><input id="${prefix}-morning" type="checkbox" role="switch" aria-label="Morning message on saved training days"></label>
           <label class="support-choice"><span><strong>An after-session check-in</strong><small>A little support after a workout you log.</small></span><input id="${prefix}-after" type="checkbox" role="switch" aria-label="After-session check-in"></label>
           <fieldset><legend>What tone feels right?</legend><label><input id="${prefix}-gentle" type="radio" name="${prefix}-tone" value="gentle" checked> Gentle &amp; encouraging</label><label><input id="${prefix}-direct" type="radio" name="${prefix}-tone" value="direct"> Firmer &amp; direct</label></fieldset>
           <p class="support-note">Always respectful, never guilt or shame. Tone doesn't turn messages on. Leave both switches off for weekly check-ins only. You can change this anytime in Settings → Coaching support.</p>
