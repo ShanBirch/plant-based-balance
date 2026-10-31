@@ -12,7 +12,7 @@ All prices are AUD including GST.
 
 All three include a meal plan, a workout program updated weekly and a weekly voice-note check-in inside Balance. Learn includes the online course across ten learning sections and a weekly 45-minute Zoom teaching lesson, for people able to exercise independently. Zoom PT includes the same course and core support, replacing the teaching lesson with a weekly 45-minute supervised workout. Programming & Nutrition has no live session.
 
-Separate ongoing coaching has a three-month minimum: Programming & Nutrition $75/week; coaching with a weekly 45-minute Zoom PT session $125/week. A repeat upfront payment and automatic renewal have not been agreed. Group coaching is future development, not a current purchase option. Existing client rates and terms remain intact. Separate local home-PT offers remain as previously published.
+Separate ongoing coaching has a three-month minimum: Programming & Nutrition $75/week; coaching with a weekly 45-minute Zoom PT session $125/week. A repeat upfront payment and automatic renewal have not been agreed. Group coaching is future development, not a current purchase option. Existing client rates and terms remain intact. Local at-client-home PT offers were retired by Shannon on 1 November 2026; historical agreements/bookings are preserved.
 
 ## Public paths
 

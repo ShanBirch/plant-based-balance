@@ -1,3 +1,7 @@
+## Retired service - 1 November 2026
+
+Shannon explicitly withdrew personal training at clients' homes, including the session-only and Home PT + Balance bundle. Do not promote, restart, submit or create a replacement home-visit offer. Historical campaign text below is retained solely as history and does not authorise new posts. The existing local Facebook campaign is verified PAUSED. Online coaching, Zoom training and independent home-workout programming remain separate retained services. Existing agreements and bookings are not cancelled by marketing removal.
+
 # Tugun home personal training: weekly Facebook campaign
 
 Authorised by Shannon on 6 October 2026. Home training: AUD $120 for a 45-minute one-on-one session with exercise scientist Shannon Birch, Bachelor of Exercise Science, eight years running his own PT studio. Based in Tugun, roughly 10–15 km service area, exact suburb/setup/equipment/time/total price confirmed before a visit. Do not promise supplied equipment, clinical rehabilitation, accreditation, travel surcharges, discounts, unlimited support or app/course access with this session-only offer.

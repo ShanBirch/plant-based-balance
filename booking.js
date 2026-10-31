@@ -1,6 +1,11 @@
 (function () {
     'use strict';
 
+    // Retired marketing links must not offer or book new home-visit PT.
+    if (new URLSearchParams(window.location.search).get('source') === 'home_pt') {
+        window.location.replace('/coaching');
+        return;
+    }
     const endpoint = '/api/booking';
     const bookingWindowDays = 5;
     const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
@@ -46,34 +51,9 @@
         fallback.href = '/dashboard.html?action=open_dm&sender_id=00a6605e-8edb-4917-85ba-24a23f179059';
     }
     const isPlantBasedChallenge = bookingSource === 'plant_based_challenge';
-    const isHomePtEnquiry = bookingSource === 'home_pt';
-    const homePtPackage = isHomePtEnquiry && urlParams.get('home_pt_package') === 'balance' ? 'balance' : 'session';
-    if (isHomePtEnquiry) {
-        document.title = 'At-Home PT Consultation | Balance';
-        document.body.dataset.landingVariant = 'tugun_home_pt_v1';
-        byId('booking-call-type-choice').hidden = false;
-        byId('booking-intro-kicker').textContent = 'Home personal training · Tugun & nearby suburbs';
-        byId('booking-intro-title').textContent = 'Talk about training at your home.';
-        const homePtOffer = homePtPackage === 'balance'
-            ? 'Home PT + Balance is AUD $170/week for one 45-minute home session, app access and three tailored workouts to complete independently.'
-            : 'Home training with exercise scientist Shannon Birch is AUD $120 for 45 minutes.';
-        byId('booking-intro-copy').textContent = homePtOffer + ' Choose a phone or video consultation to discuss your suburb, goal, available space and preferred times. This reserves a call, not a home visit. Session arrangements and total price are confirmed before you commit.';
-        byId('booking-card-title').textContent = 'Choose your consultation time.';
-        for (const targetForm of [form, outsideForm]) {
-            const goal = targetForm?.querySelector('[name="goal"]');
-            if (goal) goal.placeholder = 'Your suburb, main goal, available equipment or space, and preferred training days or times. Please do not enter your street address here.';
-        }
-        byId('booking-unavailable-title').textContent = 'Ask Shannon about training at home.';
-        byId('booking-unavailable-copy').textContent = 'Email your suburb, goal and preferred times so Shannon can check home-training availability.';
-        const fallback = byId('booking-unavailable-action');
-        fallback.textContent = 'Email about home training';
-        fallback.href = 'mailto:shannon@balanceneurosciencefitness.com?subject=At-home%20personal%20training&body=' + encodeURIComponent('Hi Shannon, I am interested in ' + (homePtPackage === 'balance' ? 'Home PT + Balance at $170/week.' : 'home personal training at $120 for 45 minutes.') + '\n\nMy suburb:\n\nMy goal:\n\nPreferred times:\n\nEquipment or space:');
-        fallback.dataset.track = 'cta_click';
-        fallback.dataset.cta = 'home_pt_email';
-    }
     function trackChallengeBooking(event, details = {}) {
-        if (!isPlantBasedChallenge && !isHomePtEnquiry && bookingSource) return;
-        const send = () => window.trackBalanceEvent?.(event, { source: isHomePtEnquiry ? 'home_pt' : isPlantBasedChallenge ? 'plant_based_challenge' : 'public_booking_page', offer: selectedOfferKey || null, ...(isHomePtEnquiry ? { home_pt_package: homePtPackage } : {}), ...details });
+        if (!isPlantBasedChallenge && bookingSource) return;
+        const send = () => window.trackBalanceEvent?.(event, { source: isPlantBasedChallenge ? 'plant_based_challenge' : 'public_booking_page', offer: selectedOfferKey || null, ...details });
         if (window.trackBalanceEvent) send();
         else if (document.readyState !== 'complete') document.addEventListener('DOMContentLoaded', send, { once: true });
     }
@@ -443,9 +423,8 @@
                     visitorTimeZone: localTimeZone,
                     bookingMode,
                     metaRef: urlParams.get('meta_ref') || '',
-                    source: isClientCoaching ? 'client_coaching' : isHomePtEnquiry ? 'home_pt' : isPlantBasedChallenge ? 'plant_based_challenge' : isFirstPtSession ? 'first_pt_session' : isWeeklyCheckinPt ? 'weekly_checkin_pt' : isZoomPtEnquiry ? 'zoom_pt' : 'public_booking_page',
-                    ...(isHomePtEnquiry ? { homePtPackage } : {}),
-                    ...((isPlantBasedChallenge || isHomePtEnquiry || !bookingSource) ? { attribution: window.getAttributionData?.() || {} } : {}),
+                    source: isClientCoaching ? 'client_coaching' : isPlantBasedChallenge ? 'plant_based_challenge' : isFirstPtSession ? 'first_pt_session' : isWeeklyCheckinPt ? 'weekly_checkin_pt' : isZoomPtEnquiry ? 'zoom_pt' : 'public_booking_page',
+                    ...((isPlantBasedChallenge || !bookingSource) ? { attribution: window.getAttributionData?.() || {} } : {}),
                     ptSessionsPerWeek: isZoomPtEnquiry && requestedPtSessions ? Number(requestedPtSessions) : null,
                     addonType: isWeeklyCheckinPt ? ptAddon : null,
                 }),
