@@ -170,7 +170,9 @@ export default async (request) => {
 
             const timing = cancellationTiming(subscription, nowSeconds);
             const params = new URLSearchParams();
-            if (subscription.metadata?.balance_plan === "balance_learn_weekly") {
+            if (subscription.metadata?.balance_plan === "organic_coaching_continuation_weekly") {
+                params.set("cancel_at_period_end", "true");
+            } else if (subscription.metadata?.balance_plan === "balance_learn_weekly") {
                 // Remove future phase changes before cancelling at the paid boundary.
                 if (subscription.schedule) {
                     const scheduleId = typeof subscription.schedule === "string" ? subscription.schedule : subscription.schedule.id;

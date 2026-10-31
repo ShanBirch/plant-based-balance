@@ -15,8 +15,10 @@ exports.handler = async function (event) {
         if (!user.id || user.is_anonymous) return response(401, { error: 'Please sign in to your own account.' });
         let body;
         try { body = JSON.parse(event.body || '{}'); } catch (_) { return response(400, { error: 'Invalid request.' }); }
-        const profiles = await supabaseQuery(`users?id=eq.${encodeURIComponent(user.id)}&select=subscription_status&limit=1`);
-        if (['active', 'trialing', 'paid', 'paying'].includes(profiles?.[0]?.subscription_status)) {
+        const profiles = await supabaseQuery(`users?id=eq.${encodeURIComponent(user.id)}&select=subscription_status,subscription_plan&limit=1`);
+        const paidContinuation = profiles?.[0]?.subscription_plan === 'organic_coaching_continuation_weekly'
+            && await supabaseQuery('rpc/organic_outreach_paid_continuation_allowed',{method:'POST',body:{p_user_id:user.id}}) === true;
+        if (!paidContinuation && ['active', 'trialing', 'paid', 'paying'].includes(profiles?.[0]?.subscription_status)) {
             // Opening someone else's invitation must not consume it for a paid member.
             return response(200, { starter: null, alreadyMember: true });
         }
@@ -37,11 +39,12 @@ exports.handler = async function (event) {
         if (grant?.setup?.supportOnly && (grant.experience !== 'coached_month_v1' || grant.setup.challengeIntakeId !== 'consistency_20261025' || !grant.starts_at || !grant.ends_at)) {
             return response(409, { grantUnavailable:true, error:'Your check-in access needs a setup check. Please ask Shannon for help.' });
         }
-        if (grant?.experience === 'coached_month_v1' && grant.ends_at && Date.parse(grant.ends_at) <= Date.now()) {
+        if (!paidContinuation && grant?.experience === 'coached_month_v1' && grant.ends_at && Date.parse(grant.ends_at) <= Date.now()) {
             return response(403, { expired: true, error: 'Your free coaching period has ended. Contact Shannon about continuing. No payment has been taken.' });
         }
         return response(200, { starter: grant ? { id: grant.id, workoutLimit: grant.experience === 'coached_month_v1' ? grant.setup?.schedule?.length : grant.workout_limit, workoutsReady: grant.workouts_ready,
-            experience: grant.experience || 'legacy_starter', startsAt: grant.starts_at || null, endsAt: grant.ends_at || null,
+            experience: paidContinuation ? 'coached_continuation_v1' : grant.experience || 'legacy_starter', paidContinuation,
+            startsAt: grant.starts_at || null, endsAt: paidContinuation ? null : grant.ends_at || null,
             setup: grant.setup || null, courseAccess: grant.experience !== 'coached_month_v1' } : null });
     } catch (_) {
         return response(409, { error: 'We could not confirm your free invitation. Please retry or ask Shannon for help.' });

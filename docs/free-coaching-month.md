@@ -7,8 +7,10 @@ in onboarding. Members do not build workouts or complete a course.
 
 Only newly prepared `coached_month_v1` grants use this experience. Historical
 starters, including Jessie, keep their original program, course and promises.
-Nothing creates a payment or subscription. Continued coaching is AUD $14.99/week
-only after explicit agreement and a verified payment path.
+Nothing creates a payment or subscription. NEW optional organic continuation is AUD $14.70/week
+after real product use and time to judge value, when genuinely relevant to member feedback and support needs.
+No proactive pricing during free enrolment/onboarding. Preserve the promised free term and historical agreements.
+Separate explicit paid agreement and a verified matching payment path are required. Use /organic-continuation.html only after its live eligibility check; never reuse an unrelated or AUD14.99 checkout.
 
 The month starts on invitation claim and lasts one calendar month. Claiming binds
 the exact program and coaching relationship to the authenticated account in one

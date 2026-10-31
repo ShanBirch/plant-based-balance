@@ -14,12 +14,13 @@ const trustHistory = [
 ];
 const invitation = "We could have a video call and get to know each other a bit, with no pressure to sign up. Would that suit you?";
 
-test('organic writer and reviewer prioritise routine, support and wanted help before the capped challenge',()=>{
+test('organic writer and reviewer use natural invitations and the new optional continuation price',()=>{
     const {buildCoachingConversationPolicy}=require('../netlify/functions/_lib/coaching-conversation-policy');
     for(const reviewer of [false,true]){
         const text=buildCoachingConversationPolicy({reviewer});
-        assert.ok(text.indexOf('CURRENT ORGANIC POLICY')<text.indexOf('ORGANIC FOLLOWER OUTREACH OBJECTIVE'));
-        for(const detail of ['current routine','existing coach/programme/support','whether they actually welcome help','A goal, weight-loss history','balance_coaching_challenge_status','reserve_balance_coaching_challenge','AUD $14.99/week','never the default conversion','historical agreements stay intact']) assert.ok(text.includes(detail),detail);
+        assert.ok(text.includes('CURRENT ORGANIC POLICY'));
+        for(const detail of ['No mandatory gym/goal/blocker/coach interview','Natural endings are allowed','balance_coaching_challenge_status','reserve_balance_coaching_challenge','AUD $14.70/week','real product use','no proactive pricing during free enrolment/onboarding','historical agreements stay intact']) assert.ok(text.toLowerCase().includes(detail.toLowerCase()),detail);
+        assert.ok(!text.includes('AUD $14.99/week'));
     }
 });
 
@@ -32,21 +33,16 @@ test('shared coaching policy preserves Shannon’s relaxed optional phone invita
     }
 });
 
-test('Story conversation guidance stays context-led without dropping conversion or boundaries', () => {
+test('organic guidance does not reinstate forced bridges or questions', () => {
     const { buildCoachingConversationPolicy } = require('../netlify/functions/_lib/coaching-conversation-policy');
     for (const reviewer of [false, true]) {
         const guidance = buildCoachingConversationPolicy({ reviewer });
-        assert.match(guidance, /business objective remains conversion to suitable paid coaching/);
-        assert.match(guidance, /not compulsory stages or a fixed two\/three-message timer/);
-        assert.match(guidance, /Do not wait indefinitely when a grounded activity bridge/);
-        assert.match(guidance, /Do not append a generic training\/nutrition question to an unrelated/);
-        assert.match(guidance, /Only connect vegan eating to training when training is actually known/);
-        assert.match(guidance, /answer reciprocal questions honestly/);
-        assert.match(guidance, /A brief "all good" is not a reason to ask what needs improving/);
-        assert.match(guidance, /ignored\/declined pivot.*means ease off/);
-        assert.match(guidance, /do not disguise commercial intent as friendship/);
-        assert.match(guidance, /never transplant that intake into casual follower chat/);
-        assert.match(guidance, /No retrospective correction DM, new outreach, silence chase/);
+        assert.match(guidance, /complete answers to the newest turn/);
+        assert.match(guidance, /No mandatory gym\/goal\/blocker\/coach interview, training bridge/);
+        assert.match(guidance, /Ask only useful unknown setup questions after interest/);
+        assert.match(guidance, /Respect refusals, existing support and silence/);
+        assert.match(guidance, /No new outreach, sender, capacity or contact expansion/);
+        assert.doesNotMatch(guidance, /normally include one easy|ORGANIC FOLLOWER OUTREACH OBJECTIVE/);
     }
 });
 
@@ -139,8 +135,8 @@ test('actual independent reviewer uses the same call objective without compulsor
             clientName:'Prospect',channelLabel:'Instagram',
         });
         assert.equal(review.verdict,'pass');
-        assert.match(prompt,/Pass a grounded call invitation for a genuine coaching enquiry/);
-        assert.match(prompt,/no blocker field is filled or the source is organic/);
+        assert.match(prompt,/Calls stay optional and separately consented/);
+        assert.match(prompt,/Flag forced discovery, manufactured questions, premature paid offers/);
         assert.doesNotMatch(prompt,/If only a goal is known, the next reply must|Once goal and struggle\/support need are understood, expect|Block a booking invitation in this opening/);
     } finally { global.fetch = savedFetch; }
 });

@@ -64,8 +64,8 @@ test('older starter grants retain course access and their original support promi
 test('challenge copy uses four weeks and disclosed optional continuation without changing historical months',async()=>{
     const challenge=await starter('coached_month_v1',{challengeIntakeId:'consistency_20261025'});
     assert.match(challenge.BalanceFreeStarter.welcomeCopy(),/four weeks/);
-    assert.match(challenge.BalanceFreeStarter.welcomeCopy(),/\$14\.99\/week only if you choose it/);
-    assert.match(challenge.BalanceFreeStarter.welcomeCopy(),/No automatic billing/);
+    assert.doesNotMatch(challenge.BalanceFreeStarter.welcomeCopy(),/\$14\./);
+    assert.match(challenge.BalanceFreeStarter.welcomeCopy(),/No card, automatic billing or obligation/);
     assert.doesNotMatch(challenge.BalanceFreeStarter.welcomeCopy(),/first month/);
     assert.match((await starter()).BalanceFreeStarter.welcomeCopy(),/first month/);
     challenge.currentUser={id:'other'};

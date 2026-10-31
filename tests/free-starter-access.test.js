@@ -86,16 +86,25 @@ test('revoked cached starter access resumes the ordinary route once without reta
     assert.equal(resumes,1);
     assert.equal(w.localStorage.getItem('pbb_free_starter_owner'),null);
 });
-function endpoint({authOk=true, anonymous=false, rows=[], profiles=[], programs=rows, queryError=false}={}) {
+function endpoint({authOk=true, anonymous=false, rows=[], profiles=[], programs=rows, queryError=false, paidContinuation=false}={}) {
     const calls=[];
     const exports={};
     vm.runInNewContext(read('netlify/functions/free-starter-access.js'),{
         exports, process:{env:{SUPABASE_URL:'https://test.invalid',SUPABASE_SERVICE_ROLE_KEY:'server-only'}},
-        require:name=>name==='node:crypto'?require(name):{supabaseQuery:async(...args)=>{calls.push(args);if(queryError)throw Error('conflict');return args[0].startsWith('users?') ? profiles : args[0].startsWith('custom_workout_programs?') ? programs : rows;}},
+        require:name=>name==='node:crypto'?require(name):{supabaseQuery:async(...args)=>{calls.push(args);if(queryError)throw Error('conflict');return args[0]==='rpc/organic_outreach_paid_continuation_allowed'?paidContinuation:args[0].startsWith('users?') ? profiles : args[0].startsWith('custom_workout_programs?') ? programs : rows;}},
         fetch:async()=>({ok:authOk,json:async()=>({id:'verified-user',is_anonymous:anonymous})})
     });
     return {handler:exports.handler,calls};
 }
+test('only verified new paid continuation carries the existing coaching programme beyond the free term',async()=>{
+ const grant={id:'grant',experience:'coached_month_v1',workouts_ready:true,starts_at:'2026-01-01',ends_at:'2026-02-01',setup:{schedule:[{weekday:1}]}};
+ for(const allowed of [true,false]){
+  const e=endpoint({rows:[grant],profiles:[{subscription_status:'active',subscription_plan:'organic_coaching_continuation_weekly'}],programs:[{id:'real-program'}],paidContinuation:allowed});
+  const r=await e.handler({httpMethod:'POST',headers:{authorization:'Bearer test'},body:'{}'});const body=JSON.parse(r.body);
+  if(allowed){assert.equal(body.starter.experience,'coached_continuation_v1');assert.equal(body.starter.endsAt,null);assert.equal(body.starter.courseAccess,false);assert.equal(body.starter.paidContinuation,true);}
+  else assert.deepEqual(body,{starter:null,alreadyMember:true});
+ }
+});
 test('claim binds to the verified identity, hashes the secret, and ignores a supplied user id',async()=>{
     const e=endpoint({rows:[{id:'grant',workout_limit:2,workouts_ready:false}]});
     const token='x'.repeat(43);

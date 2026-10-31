@@ -1,6 +1,7 @@
 import { ensureLearnBillingSchedule } from "./lib/learn-billing-schedule.js";
 import { handoffPurchasedCustomer } from "./lib/customer-dm-handoff.js";
 import Stripe from "stripe";
+import { isOrganicContinuation, verifyOrganicContinuation, organicBillingSubscriptions } from "./lib/organic-continuation-billing.js";
 import { sendCAPIEvent } from "./lib/capi-utils.js";
 
 const STRIPE_API_VERSION = "2026-06-24.dahlia";
@@ -20,6 +21,7 @@ const META_PREVIEW_PURCHASE_MESSAGE = "You're in 🙌 Your Balance Learn pass is
 const META_PREVIEW_PURCHASE_DELAY_MS = 60 * 1000;
 
 function subscriptionOfferDetails(plan) {
+    if (plan === "organic_coaching_continuation_weekly") return { productName:"Optional organic coaching continuation", subtype:"organic_continuation_sale", recurringInterval:"week", commitmentWeeks:0, checkinsPerWeek:"1", callsPerWeek:"0", needsYouReason:"organic_continuation_sale" };
     if (plan === "balance_learn_weekly") return { productName: "Balance Learn membership", subtype: "balance_learn_sale", recurringInterval: "week", checkinsPerWeek: "1", callsPerWeek: "0", needsYouReason: "balance_learn_sale" };
     if (plan === "zoom_pt_1_weekly") {
         return {
@@ -124,6 +126,7 @@ function createStripeRestClient(secretKey) {
             retrieve: subscriptionId => stripeRestRequest(secretKey, "GET", `subscriptions/${encodeURIComponent(subscriptionId)}`),
             cancel: subscriptionId => stripeRestRequest(secretKey, "DELETE", `subscriptions/${encodeURIComponent(subscriptionId)}`),
         },
+        invoices: { retrieve: invoiceId => stripeRestRequest(secretKey,"GET",`invoices/${encodeURIComponent(invoiceId)}`) },
     };
 }
 
@@ -465,6 +468,11 @@ async function recordStripeGrowthOutcome({ payload, mirrorRow, userIds, stripeEv
 
 async function syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscription, invoice, session } = {}) {
     if (!subscription) return null;
+    await verifyOrganicContinuation(subscription,supabaseRequest);
+    if(isOrganicContinuation(subscription)&&ACTIVE_SUBSCRIPTION_STATUSES.has(subscription.status)) {
+        const paidInvoice=invoice|| (subscription.latest_invoice ? await stripe.invoices.retrieve(normalizeStripeId(subscription.latest_invoice)) : null);
+        if(paidInvoice?.status!=='paid')return null;
+    }
     subscription = await ensureLearnBillingSchedule(stripe, subscription);
 
     const customerId = normalizeStripeId(subscription.customer || invoice?.customer || session?.customer);
@@ -510,6 +518,7 @@ async function syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscripti
             billing_reason: invoice?.billing_reason || null,
             collection_method: subscription.collection_method || invoice?.collection_method || null,
             invoice_status: invoice?.status || null,
+            ...(isOrganicContinuation(subscription)?{paid_agreement:metadata.paid_agreement,terms_version:metadata.terms_version,free_grant_id:metadata.free_grant_id}:{}),
         },
     };
 
@@ -913,6 +922,7 @@ async function recordMetaPreviewPurchaseAndQueue({ session, stripeEvent, email, 
 }
 
 async function createSubscriptionSaleNeedsYouAlert({ syncResult, stripeEvent, subscription, invoice, session } = {}) {
+    if(isOrganicContinuation(subscription)&&!syncResult)return {skipped:'organic_payment_not_verified'};
     if (!isInitialPaidSubscriptionSale({ subscription, invoice, session })) {
         return { skipped: "not_initial_paid_subscription_sale" };
     }
@@ -1212,6 +1222,14 @@ export default async (request, context) => {
 
     // Process Event
     try {
+        if (['invoice.payment_failed','charge.refunded','charge.dispute.created','radar.early_fraud_warning.created'].includes(stripeEvent.type)) {
+            const affected=await organicBillingSubscriptions(stripeEvent,path=>stripeRestRequest(STRIPE_SECRET_KEY,'GET',path));
+            for(const subscription of affected) {
+                await verifyOrganicContinuation(subscription,supabaseRequest);
+                if(stripeEvent.type==='invoice.payment_failed')await syncStripeSubscriptionToBalance(stripe,stripeEvent,{subscription,invoice:stripeEvent.data.object});
+                await insertSubscriptionSaleAlert({idempotency_key:`organic_billing:${stripeEvent.id}:${subscription.id}`,coach_id:'00a6605e-8edb-4917-85ba-24a23f179059',client_id:subscription.metadata.user_id,alert_type:'subscription_sale',priority:'urgent',title:'Continuation billing needs review',description:`Stripe reported ${stripeEvent.type} for the optional organic continuation. Review the payment in Stripe before changing access or contacting the member.`,status:'pending',suggested_message:null,data:{subtype:'organic_continuation_billing_review',operator_queue:'needs_you',needs_you_required:true,stripe_event_id:stripeEvent.id,stripe_subscription_id:subscription.id,stripe_event_type:stripeEvent.type}});
+            }
+        }
         if (stripeEvent.type === 'invoice.paid') {
             const invoice = stripeEvent.data.object;
             const subscription = await retrieveSubscriptionForInvoice(stripe, invoice);
@@ -1408,9 +1426,9 @@ export default async (request, context) => {
             }
         }
 
-        if (stripeEvent.type === 'customer.subscription.created'
+        if ((stripeEvent.type === 'customer.subscription.created'
             || stripeEvent.type === 'customer.subscription.updated'
-            || stripeEvent.type === 'customer.subscription.deleted') {
+            || stripeEvent.type === 'customer.subscription.deleted') && isOrganicContinuation(stripeEvent.data.object)) {
             await syncStripeSubscriptionToBalance(stripe, stripeEvent, {
                 subscription: stripeEvent.data.object,
             });
@@ -1418,6 +1436,7 @@ export default async (request, context) => {
     } catch (logicErr) {
         console.error("Webhook Logic Error:", logicErr);
         if (logicErr.balanceScheduleFailure) return new Response("Billing schedule setup needs retry", { status: 500 });
+        if (logicErr.organicContinuation||isOrganicContinuation(stripeEvent.data?.object)||['invoice.payment_failed','charge.refunded','charge.dispute.created','radar.early_fraud_warning.created'].includes(stripeEvent.type)) return new Response('Billing review needs retry',{status:500});
         // Do not fail the webhook request if logic fails, to avoid retries
     }
 

@@ -1,0 +1,21 @@
+.challenge-kicker { margin-top:24px; font-size:.72rem; letter-spacing:.16em; font-weight:800; color:#80652d; }
+.challenge-headline { font:700 clamp(1.8rem,5vw,3rem)/1.12 'Outfit',sans-serif; margin:14px 0; max-width:720px; }
+.challenge-copy { font-size:1.05rem; line-height:1.65; max-width:680px; }
+.challenge-terms { font-weight:700; margin:18px 0; }
+.challenge-actions { display:flex; gap:18px; align-items:center; flex-wrap:wrap; margin:22px 0; }
+.challenge-primary { display:inline-flex; padding:14px 20px; border-radius:999px; background:#d7b56d; color:#171b16 !important; font-weight:800; text-decoration:none; }
+.challenge-small { font-size:.8rem; line-height:1.6; opacity:.85; max-width:650px; margin-top:14px; }
+.organic-challenge-offer .offer-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.organic-challenge-offer .offer-card { min-width:0; }
+.organic-challenge-offer .offer-card p { margin:14px 0; }
+#free-challenge,#starting-packages { scroll-margin-top:110px; }
+@media(max-width:760px) {
+ .organic-challenge-offer .offer-grid { grid-template-columns:1fr; }
+ .challenge-actions { align-items:flex-start; flex-direction:column; }
+ .challenge-headline { font-size:2rem; }
+}
+@media(max-width:1000px) {
+ body:has(.organic-challenge-offer) .topbar,body:has(.challenge-kicker) .topbar,body:has(.challenge-kicker) .site-header { padding-top:max(42px,env(safe-area-inset-top,0px)); }
+ body:has(.organic-challenge-offer),body:has(.challenge-kicker) { padding-bottom:max(16px,env(safe-area-inset-bottom,0px)); }
+ #free-challenge { scroll-margin-top:150px; }
+}

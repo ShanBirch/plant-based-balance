@@ -56,3 +56,9 @@ test('live client context exposes selected support without inferring older-membe
  assert.match(chosen,/morning on saved training days=false; after an actual logged session=true/);
  assert.match(chosen,/revision=3/);assert.match(chosen,/Tone is not contact consent/);
 });
+test('new paid continuation retains coaching guidance while existing members retain their own agreement',()=>{
+ const {buildCourseClientContext}=require('../netlify/functions/_lib/course-client-context');
+ const paid=buildCourseClientContext({support_cohort:true,account:[{subscription_status:'active',subscription_plan:'organic_coaching_continuation_weekly'}],starter:[{experience:'coached_month_v1'}]});
+ assert.match(paid,/LIVE ORGANIC COACHING CONTINUATION/);assert.doesNotMatch(paid,/Balance Learn is a ten-week/);
+ const old=buildCourseClientContext({support_cohort:false,starter:[{experience:'coached_month_v1'}]});assert.doesNotMatch(old,/14\.70|APP SUPPORT CHOICES/);assert.match(old,/original programme/);
+});

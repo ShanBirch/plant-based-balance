@@ -1,0 +1,16 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+function harness({cohort=true,end='2026-01-01',used=true,price=1470}={}) {
+ const calls=[];const query=async(path)=>path.includes('cohort_allowed')?cohort:path.startsWith('balance_free_starters')?[{id:'grant',starts_at:'2025-12-01',ends_at:end,setup:{challengeEnrolmentId:'enrol'}}]:path.startsWith('workouts')?(used?[{id:'logged'}]:[]):[];
+ const c={exports:{},URLSearchParams,Date,Math,process:{env:{SUPABASE_URL:'https://db.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture',STRIPE_SECRET_KEY:'fixture'}},require:(name)=>name==='stripe'?class {constructor(){this.prices={retrieve:async()=>{calls.push({url:'https://api.stripe.com/prices/fixture'});return {active:true,product:'prod_VXqRbwNFHgp8Wy',unit_amount:price,currency:'aud',recurring:{interval:'week',interval_count:1},tax_behavior:'inclusive'}}};this.checkout={sessions:{create:async(body)=>{calls.push({url:'https://api.stripe.com/checkout/sessions',options:{body}});return {url:'https://checkout.stripe.com/fixture'}}}}}}:name==='node:crypto'?require(name):({supabaseQuery:query}),fetch:async(url,options)=>{calls.push({url,options});if(url.includes('/auth/v1/user'))return{ok:true,json:async()=>({id:'new-cohort-user',email:'fixture@example.invalid'})};if(url.includes('/prices/'))return{ok:true,json:async()=>({active:true,unit_amount:price,currency:'aud',recurring:{interval:'week',interval_count:1},tax_behavior:'inclusive'})};return{ok:true,json:async()=>({url:'https://checkout.stripe.com/fixture'})};}};
+ vm.runInNewContext(fs.readFileSync('netlify/functions/organic-coaching-continuation.js','utf8'),c);return{run:c.exports.handler,calls};
+}
+const event={httpMethod:'POST',headers:{authorization:'Bearer fixture',origin:'https://plantbased-balance.org'},body:JSON.stringify({paidAgreement:true,termsVersion:'organic_1470_weekly_20261101'})};
+test('existing or unknown cohort, free period and missing real use cannot reach Stripe',async()=>{
+ for(const args of [{cohort:false},{end:'2099-01-01'},{end:'invalid'},{used:false}]){const h=harness(args);const r=await h.run(event);assert.ok([403,409].includes(r.statusCode));assert.equal(h.calls.filter(x=>x.url.includes('stripe.com')).length,0);}
+});
+test('checkout requires separate agreement and exact verified AUD14.70 weekly price',async()=>{
+ let h=harness();assert.equal((await h.run({...event,body:'{}'})).statusCode,400);
+ h=harness({price:1499});assert.equal((await h.run(event)).statusCode,503);assert.equal(h.calls.some(x=>x.url.endsWith('/checkout/sessions')),false);
+ h=harness();assert.equal((await h.run(event)).statusCode,200);const body=h.calls.find(x=>x.url.endsWith('/checkout/sessions')).options.body;
+ assert.equal(body.line_items[0].price,'price_1UWkkrCGCyRUsOfKYcvJGqiR');assert.equal(body.subscription_data.metadata.user_id,'new-cohort-user');assert.equal(body.subscription_data.metadata.commitment_weeks,'0');assert.equal(body.subscription_data.metadata.cancellation_notice_days,'0');assert.equal(Object.hasOwn(body.subscription_data,'trial_period_days'),false);
+});
