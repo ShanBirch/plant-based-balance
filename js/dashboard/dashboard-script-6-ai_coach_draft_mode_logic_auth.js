@@ -7425,7 +7425,7 @@ async function leaveCurrentChallenge() {
         return;
     }
 
-    if (!confirm('Are you sure you want to leave this challenge? If you are still pending start, your entry fee will be refunded. If you\'re the last participant, the challenge will be cancelled.')) {
+    if (!confirm('Are you sure you want to leave this challenge? If you\'re the last participant, the challenge will be cancelled.')) {
         console.log('⚔️ [leaveCurrentChallenge] User cancelled confirmation');
         return;
     }

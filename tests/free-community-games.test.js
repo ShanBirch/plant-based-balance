@@ -13,3 +13,8 @@ test('new games and challenges expose only free entry and the header has no coin
  const script=read('js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js');assert.match(script,/const betAmount = 0/);assert.match(script,/const entryFee = 0/);assert.match(script,/Join challenge for free/);
  const migration=read('supabase/migrations/20261101020000_free_games_global_levels.sql');assert.match(migration,/new.entry_fee:=0/);assert.match(migration,/new.coin_bet:=0/);assert.match(migration,/balance_free_game_entry_guard/);assert.match(migration,/not coalesce\(u.is_test_account,false\)/);
 });
+
+test('challenge instructions describe free entry rather than the retired coin charge',()=>{
+ const html=read('dashboard.html'),start=html.indexOf('id="create-challenge-modal"'),end=html.indexOf('id="challenge-pass-modal"');
+ assert.doesNotMatch(html.slice(start,end),/Pay the <strong/);assert.match(html.slice(start,end),/No coins or payment needed/);
+});
