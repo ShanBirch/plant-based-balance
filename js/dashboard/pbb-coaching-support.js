@@ -124,6 +124,7 @@
         }
     }
     window.BalanceCoachingSupport={mount,load,save,read,openSettings,prepareOnboarding,checkEligibility,isEligible,markDraftRestored:()=>{onboardingDraftOwner=window.currentUser?.id;}};
+    window.addEventListener('pbbInitComplete',checkEligibility);
     document.addEventListener('pbbInitComplete',checkEligibility);
     if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',mount); else mount();
 })();

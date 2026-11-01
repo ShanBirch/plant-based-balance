@@ -6777,8 +6777,8 @@ async function ensureMetaPreviewMealPlan() {
 }
 window.ensureMetaPreviewMealPlan = ensureMetaPreviewMealPlan;
 
-async function claimMetaPreviewWorkoutCalendar(userId) {
-    const calendar = getStoredOnboardingWorkoutCalendar(window.userProfile || {});
+async function claimMetaPreviewWorkoutCalendar(userId, selectedCalendar = null) {
+    const calendar = selectedCalendar || getStoredOnboardingWorkoutCalendar(window.userProfile || {});
     if (!calendar) throw new Error('Preview workout calendar is missing');
 
     const existingFacts = await dbHelpers.userFacts.get(userId).catch(() => ({}));
@@ -8071,7 +8071,7 @@ function isTransferredWizardClient() {
 }
 
 function isWizardSlideSkipped(step) {
-    if (step === 5 && window.BalanceCoachingSupport?.isEligible() !== true) return true;
+    if (step === 5 && !window.BalanceFreeStarter?.selfSetup?.() && window.BalanceCoachingSupport?.isEligible() !== true) return true;
     if (window.BalanceFreeStarter?.coached?.() && !window.BalanceFreeStarter?.selfSetup?.() && [3,4,6,7].includes(step)) return true;
     // Cycle alignment is relevant only when the member explicitly chose "For her".
     // Keep this rule here so forward, back, and resumed onboarding paths all agree.
@@ -14500,7 +14500,10 @@ function playHeaderCoinGrantAnimation(startBalance, endBalance, grantedAmount) {
 async function finishOnboarding() {
     if(window.BalanceFreeStarter?.selfSetup?.()){
         try{
-            await claimMetaPreviewWorkoutCalendar(window.currentUser.id);
+            const setup=JSON.parse(sessionStorage.getItem('userProfile')||'{}');
+            const chosen=parseStoredWorkoutCalendar(setup.workout_calendar);
+            if(!chosen)throw Error('Training calendar is missing');
+            await claimMetaPreviewWorkoutCalendar(window.currentUser.id,chosen);
             const result=await window.supabaseClient.from('custom_workout_programs').update({is_active:false}).eq('user_id',window.currentUser.id).eq('is_active',true);
             if(result.error)throw result.error;
             window.activeCustomProgramCache=null;

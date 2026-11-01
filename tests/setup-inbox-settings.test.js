@@ -8,9 +8,9 @@ test('welcome only uses a matching authenticated account and retries safely',asy
 });
 test('self-selected calendar is confirmed before retiring only this member provisional programme',async()=>{
  const source=read('js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js');const prefix=source.slice(source.indexOf('async function finishOnboarding() {')+'async function finishOnboarding() {'.length,source.indexOf('    const completingTransferredSetup',source.indexOf('async function finishOnboarding() {')));
- const run=new Function('window','claimMetaPreviewWorkoutCalendar','return (async()=>{'+prefix+'return true;})()');
+ const run=new Function('window','claimMetaPreviewWorkoutCalendar','sessionStorage','parseStoredWorkoutCalendar','return (async()=>{'+prefix+'return true;})()');
  for(const fail of [true,false]){const calls=[];const window={currentUser:{id:'own'},BalanceFreeStarter:{selfSetup:()=>true},showToast:()=>calls.push('retry'),supabaseClient:{from:name=>{assert.equal(name,'custom_workout_programs');return {update:value=>{assert.deepEqual(value,{is_active:false});return {eq:(key,value)=>{assert.equal(key,'user_id');assert.equal(value,'own');return {eq:async(key,value)=>{assert.equal(key,'is_active');assert.equal(value,true);calls.push('retire');return {};}};}}}};}}};
- const complete=await run(window,async uid=>{assert.equal(uid,'own');calls.push('confirm-calendar');if(fail)throw Error('failed');});
+ const complete=await run(window,async uid=>{assert.equal(uid,'own');calls.push('confirm-calendar');if(fail)throw Error('failed');},{getItem:()=>JSON.stringify({workout_calendar:'chosen-calendar'})},v=>{assert.equal(v,'chosen-calendar');return {tuesday:'workout'};});
  assert.deepEqual(calls,fail?['confirm-calendar','retry']:['confirm-calendar','retire']);assert.equal(complete,fail?undefined:true);}
 });
 test('Settings return bypasses setup for one navigation without changing completion or entitlements',async()=>{
