@@ -604,6 +604,7 @@
         function postAuthDestination(fragment = '', signupParams = null) {
             if (hasPendingFreeStarter()) return '/dashboard.html' + fragment;
             const incoming = signupParams || new URLSearchParams(window.location.search);
+            if(incoming.get('redirect')==='/text-coaching.html')return '/text-coaching.html'+fragment;
             if (!isAccountFirstPreview(incoming)) {
                 return incoming.get('redirect') || '/dashboard.html' + fragment;
             }
