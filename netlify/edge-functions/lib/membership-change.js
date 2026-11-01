@@ -1,6 +1,9 @@
+import {EXTRA_COACHING_PLANS} from './selfserve-coaching-billing.js';
 import { getBalanceCheckoutPlan } from './checkout-guard.js';
 
 export const choices = ['balance_online_coaching_6_month_weekly', 'balance_online_coaching_3_month_weekly', 'balance_online_coaching_month_to_month_weekly'].map(token => getBalanceCheckoutPlan(token));
+const appOffers=[{key:'text',plan:'standard_text_coaching_weekly',name:'Text support',amount:4999,price:'price_1UWlnXCGCyRUsOfKeq1Kn01q',termsVersion:'standard_text_4999_13w_20261101_v1',checkinFormat:'text',calls:0,renewal:'weekly'},...EXTRA_COACHING_PLANS];
+choices.push(...appOffers.filter(p=>p.renewal!=='pending').map(p=>({token:'selfserve_'+p.key,balancePlan:p.plan,balanceProduct:'standard_'+p.key+'_coaching',productName:p.name,unitAmount:p.amount,commitmentWeeks:13,commitmentLabel:'3 months (13 weeks)',checkoutDisclosure:`AUD${(p.amount/100).toFixed(2)} per week, including GST. Minimum 13 weekly payments: AUD${(p.amount*13/100).toFixed(2)}. No upfront fee. ${p.renewal==='fixed'?'Ends after 13 weeks.':'Then weekly until cancelled, with no additional notice period.'}`,priceId:p.price,termsVersion:p.termsVersion,checkinFormat:p.checkinFormat,calls:p.calls,renewal:p.renewal})));
 export function previewChange(subscription, token, now = Math.floor(Date.now()/1000)) {
  const plan = choices.find(p => p.token === token);
  const item = subscription.items?.data?.[0];
@@ -35,6 +38,7 @@ export function scheduleParameters(schedule, subscription, quote, priceId) {
  set('phases[1][billing_cycle_anchor]','phase_start');
  set('phases[1][proration_behavior]','none');
  const metadata={...subscription.metadata,balance_plan:plan.balancePlan,balance_product:plan.balanceProduct,commitment_weeks:plan.commitmentWeeks,commitment_start:quote.effectiveAt,commitment_label:plan.commitmentLabel,cancellation_notice_days:30,renewal_terms:plan.renewalTerms,checkins_per_week:1,calls_per_week:0,membership_change_source:'website'};
+ if(plan.priceId){Object.assign(metadata,{cancellation_notice_days:0,paid_agreement:plan.termsVersion,terms_version:plan.termsVersion,checkin_format:plan.checkinFormat,calls_per_week:String(plan.calls),renewal_policy:plan.renewal});params.set('end_behavior',plan.renewal==='fixed'?'cancel':'release');}
  for(const [key,value] of Object.entries(metadata)) set(`phases[1][metadata][${key}]`,value);
  set('metadata[balance_membership_change]','website_v1');
  set('metadata[target_name]',quote.name);

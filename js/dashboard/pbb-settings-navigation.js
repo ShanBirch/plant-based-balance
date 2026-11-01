@@ -2,6 +2,7 @@
     'use strict';
 
     var destinations = {
+        membership: {open:'openBalanceMembership',surfaces:[{id:'balance-membership',close:'closeBalanceMembership'}]},
         checkin: {
             open: 'openYourCheckin',
             managesHistory: true,
@@ -206,7 +207,9 @@
         holdUntil = Math.max(holdUntil, Date.now() + Math.max(0, Number(milliseconds) || 0));
     };
 
-    window.openMembershipSettings = function(){ window.history.replaceState({},'', '/dashboard.html?settings_return=1'); window.location.href='/membership.html?from=settings'; };
+    window.openBalanceMembership=function(){return window.BalanceMembership?.open();};
+    window.closeBalanceMembership=function(){return window.BalanceMembership?.close();};
+    window.openMembershipSettings=function(){return window.openSettingsDestination('membership');};
 
     window.openCancellationSettings = function () {
         window.history.replaceState({},'', '/dashboard.html?settings_return=1');

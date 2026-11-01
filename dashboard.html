@@ -12586,8 +12586,7 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
                 <h3 id="settings-account-title">Account &amp; help</h3>
                 <div class="settings-v2-card">
                     <button id="settings-change-password" class="settings-v2-row" type="button" onclick="openSettingsDestination('password')"><span class="settings-v2-icon">🔒</span><span class="settings-v2-copy"><strong>Password</strong><small>Add or update a login password</small></span><span class="settings-v2-chevron">›</span></button>
-                    <div id="settings-payment-method" class="settings-v2-row settings-v2-row-static"><span class="settings-v2-icon">💳</span><span class="settings-v2-copy"><strong>Payments &amp; subscription</strong><small>See plans, payments and cancellation options</small></span><button id="settings-payment-method-btn" class="settings-v2-pill" type="button" onclick="openMembershipSettings()">Manage</button></div>
-                    <button id="settings-cancel-subscription" class="settings-v2-row" type="button" onclick="openCancellationSettings()"><span class="settings-v2-icon">○</span><span class="settings-v2-copy"><strong>Cancel subscription</strong><small>View your end date and stop renewal</small></span><span class="settings-v2-chevron">›</span></button>
+                    <button id="settings-payment-method" class="settings-v2-row" type="button" onclick="openMembershipSettings()"><span class="settings-v2-icon">💳</span><span class="settings-v2-copy"><strong>Manage membership</strong><small>Your plan and coaching options</small></span><span class="settings-v2-chevron">›</span></button>
                     <div id="settings-app-suggestions" class="settings-v2-suggestion">
                         <button class="settings-v2-row" type="button" onclick="toggleAppSuggestionBox()"><span class="settings-v2-icon">💬</span><span class="settings-v2-copy"><strong>Suggestions &amp; support</strong><small>Send ideas or fixes straight to Shannon</small></span><span class="settings-v2-open"><span id="app-suggestion-toggle-label">Open</span><span id="app-suggestion-toggle-icon">›</span></span></button>
                         <div id="app-suggestion-panel" style="display:none;"><textarea id="app-suggestion-input" maxlength="1200" rows="3" placeholder="What should we add or improve?"></textarea><div class="settings-v2-suggestion-actions"><button id="app-suggestion-submit-btn" type="button" onclick="submitAppSuggestion()">Send</button><div id="app-suggestion-status" style="display:none;"></div></div></div>
@@ -21841,7 +21840,9 @@ if(!window._pbbIsIOSSafari) {
 </style>
 
 <script src="js/dashboard/pbb-deferred-pickers.js?diet_library=3&v=5-preserve-saved-allergies"></script>
-<script src="js/dashboard/pbb-settings-navigation.js?v=3-membership-home"></script>
+<script src="js/dashboard/pbb-settings-navigation.js?v=4-in-app-membership"></script>
+<link rel="stylesheet" href="css/dashboard/pbb-membership.css?v=20261101-v1">
+<script src="js/dashboard/pbb-membership.js?v=20261101-v1"></script>
 
 
 <!-- Health Connect Prompt Modal -->

@@ -59,8 +59,8 @@ assert.match(checkout, /AU\$779\.74 minimum total/);
 assert.match(checkout, /AU\$649\.87 minimum total/);
 assert.match(checkout, /AU\$299\.96 minimum total/);
 assert.match(terms, /Existing agreements remain unchanged/);
-assert.match(dashboard, /settings-cancel-subscription/);
-assert.match(dashboard, /onclick="openCancellationSettings\(\)"/);
+assert.doesNotMatch(dashboard, /id="settings-cancel-subscription"/);
+assert.match(fs.readFileSync(path.join(root,'js/dashboard/pbb-membership.js'),'utf8'), /cancel-subscription/);
 assert.match(coaching, /Existing members keep their agreed access and terms/);
 assert.match(checkoutScript, /terms: '2026-09-01'/);
 for (const file of publicLinkFiles) {

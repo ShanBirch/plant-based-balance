@@ -21,7 +21,9 @@ class StripeCheckoutClient {
    const result=await response.json();if(!response.ok)throw Error('Stripe checkout request failed');return result;
   };
   this.prices={retrieve:id=>request('prices/'+encodeURIComponent(id))};
-  this.checkout={sessions:{create:(params,options)=>request('checkout/sessions','POST',params,options)}};
+  this.checkout={sessions:{create:(params,options)=>request('checkout/sessions','POST',params,options),retrieve:id=>request('checkout/sessions/'+encodeURIComponent(id)),expire:id=>request('checkout/sessions/'+encodeURIComponent(id)+'/expire','POST',{})}};
+  this.subscriptionSchedules={retrieve:id=>request('subscription_schedules/'+encodeURIComponent(id))};
+  this.subscriptions={list:customer=>request('subscriptions?customer='+encodeURIComponent(customer)+'&status=all&limit=100')};
  }
 }
 module.exports=StripeCheckoutClient;

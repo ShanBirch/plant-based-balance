@@ -19,7 +19,8 @@ test('every in-app Settings destination uses the shared navigation layer', () =>
     assert.match(dashboard, new RegExp(`openSettingsDestination\\('${key}'\\)`), key);
     assert.match(navigation, new RegExp(`${key}: \\{`), key);
   });
-  assert.match(dashboard, /onclick="openCancellationSettings\(\)"/);
+  assert.doesNotMatch(dashboard, /id="settings-cancel-subscription"/);
+  assert.match(dashboard,/onclick="openMembershipSettings\(\)"/);
 });
 
 test('all Settings sheets have a matching closer', () => {
@@ -57,7 +58,7 @@ test('phone back and both platform edge gestures close the active Settings sheet
 test('membership and cancellation return directly to Home without replaying setup',()=>{
  assert.match(cancellation,/dashboard\.html\?settings_return=1/);
  assert.doesNotMatch(cancellation,/window\.history\.back\(\)/);
- assert.match(navigation,/membership\.html\?from=settings/);
+ assert.match(navigation,/openSettingsDestination\('membership'\)/);
  assert.match(dashboard,/onclick="openMembershipSettings\(\)"/);
 });
 

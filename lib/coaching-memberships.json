@@ -1,0 +1,41 @@
+[
+  {
+    "key": "text",
+    "amount": 4999,
+    "price": "price_1UWlnXCGCyRUsOfKeq1Kn01q",
+    "product": "prod_balance_text_review_20261101",
+    "name": "Text support",
+    "plan": "standard_text_coaching_weekly",
+    "checkinFormat": "text",
+    "calls": 0,
+    "minimumWeeks": 13,
+    "termsVersion": "standard_text_4999_13w_20261101_v1",
+    "renewal": "weekly"
+  },
+  {
+    "key": "voice",
+    "amount": 7500,
+    "price": "price_1UWnyfCGCyRUsOfK1MOjgOMq",
+    "product": "prod_balance_voice_support_20261101",
+    "name": "Voice support",
+    "plan": "standard_voice_coaching_weekly",
+    "checkinFormat": "voice",
+    "calls": 0,
+    "minimumWeeks": 13,
+    "termsVersion": "standard_voice_7500_13w_20261101_v1",
+    "renewal": "weekly"
+  },
+  {
+    "key": "zoom",
+    "amount": 12500,
+    "price": "price_1UWnygCGCyRUsOfKqOS6nA6f",
+    "product": "prod_balance_zoom_support_20261101",
+    "name": "Zoom coaching",
+    "plan": "standard_zoom_coaching_weekly",
+    "checkinFormat": "voice",
+    "calls": 1,
+    "minimumWeeks": 13,
+    "termsVersion": "standard_zoom_12500_13w_20261101_v1",
+    "renewal": "weekly"
+  }
+]

@@ -44,11 +44,18 @@ export default async request=>{
   // Prices are drawn only from the same server-side catalog used by new checkouts.
   const lookup=`balance_change_${quote.token}_${quote.unitAmount}_v1`;
   const prices=await stripe(key,`prices?lookup_keys[]=${encodeURIComponent(lookup)}&active=true&limit=1`);
-  let price=prices.data[0];
+  let price=choices.find(p=>p.token===body.token)?.priceId ? await stripe(key,`prices/${choices.find(p=>p.token===body.token).priceId}`) : prices.data[0];
   if(!price){const p=new URLSearchParams({currency:'aud',unit_amount:String(quote.unitAmount),'recurring[interval]':'week','product_data[name]':quote.name,lookup_key:lookup});price=await stripe(key,'prices',p,lookup);}
+  if(choices.find(p=>p.token===body.token)?.priceId&&(!price.active||price.tax_behavior!=='inclusive'))throw Error('This membership price is not available.');
   if(price.currency!=='aud'||price.unit_amount!==quote.unitAmount||price.recurring?.interval!=='week'||price.recurring?.interval_count!==1)throw new Error('This plan needs a pricing review. Please contact Shannon.');
   const schedule=await stripe(key,'subscription_schedules',new URLSearchParams({from_subscription:s.id}),`balance-change-${s.id}-${s.items.data[0].current_period_end||s.current_period_end}`);
   await stripe(key,`subscription_schedules/${schedule.id}`,scheduleParameters(schedule,s,quote,price.id),`balance-change-confirm-${schedule.id}-${quoteId}`);
+  if(body.token.startsWith('selfserve_')){
+   const notification={idempotency_key:'membership_change:'+schedule.id,coach_id:'00a6605e-8edb-4917-85ba-24a23f179059',client_id:auth.data.user.id,alert_type:'subscription_sale',priority:'urgent',title:'Membership change scheduled',description:quote.name+' starts '+new Date(quote.effectiveAt*1000).toLocaleDateString('en-AU')+'. Existing billing continues until then. No new payment was taken today.',status:'pending',suggested_message:null,data:{subtype:'membership_change_scheduled',stripe_subscription_id:s.id,stripe_schedule_id:schedule.id,target_plan:quote.name,effective_at:quote.effectiveAt,operator_queue:'needs_you'}};
+   const found=await supabase.from('coach_alerts').select('id').eq('idempotency_key',notification.idempotency_key).maybeSingle();
+   const logged=found.data?{}:await supabase.from('coach_alerts').insert(notification);
+   if(logged.error&&logged.error.code!=='23505')throw Error('Your change was scheduled, but the coach notification needs a review. Refresh membership before trying again.');
+  }
   return json({success:true,quote});
  }catch(error){return json({error:error.message||'Could not load membership options.'},400);}
 };

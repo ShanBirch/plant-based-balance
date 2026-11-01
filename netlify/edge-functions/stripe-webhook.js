@@ -2,8 +2,8 @@ import { ensureLearnBillingSchedule } from "./lib/learn-billing-schedule.js";
 import { handoffPurchasedCustomer } from "./lib/customer-dm-handoff.js";
 import Stripe from "stripe";
 import { isOrganicContinuation, verifyOrganicContinuation, organicBillingSubscriptions } from "./lib/organic-continuation-billing.js";
-import { isStandardTextSubscription, verifyStandardTextSubscription, ensureTextCoachingRelationship } from "./lib/standard-text-coaching-billing.js";
-const isManagedCoachingSubscription=s=>isOrganicContinuation(s)||isStandardTextSubscription(s);
+import {isSelfServeCoachingSubscription,verifySelfServeCoachingSubscription,ensureSelfServeCoachingRelationship} from "./lib/selfserve-coaching-billing.js";
+const isManagedCoachingSubscription=s=>isOrganicContinuation(s)||isSelfServeCoachingSubscription(s);
 import { sendCAPIEvent } from "./lib/capi-utils.js";
 
 const STRIPE_API_VERSION = "2026-06-24.dahlia";
@@ -23,6 +23,7 @@ const META_PREVIEW_PURCHASE_MESSAGE = "You're in 🙌 Your Balance Learn pass is
 const META_PREVIEW_PURCHASE_DELAY_MS = 60 * 1000;
 
 function subscriptionOfferDetails(plan) {
+    if(['standard_voice_coaching_weekly','standard_zoom_coaching_weekly'].includes(plan))return {productName:plan==='standard_zoom_coaching_weekly'?'Zoom coaching':'Voice support',subtype:'selfserve_coaching_sale',recurringInterval:'week',commitmentWeeks:13,checkinsPerWeek:'1',callsPerWeek:plan==='standard_zoom_coaching_weekly'?'1':'0',needsYouReason:'selfserve_coaching_setup'};
     if(plan==='standard_text_coaching_weekly')return {productName:'Programming & Nutrition, weekly text review',subtype:'standard_text_membership_sale',recurringInterval:'week',commitmentWeeks:13,checkinsPerWeek:'1',callsPerWeek:'0',needsYouReason:'standard_text_membership_setup'};
     if (plan === "organic_coaching_continuation_weekly") return { productName:"Optional organic coaching continuation", subtype:"organic_continuation_sale", recurringInterval:"week", commitmentWeeks:0, checkinsPerWeek:"1", callsPerWeek:"0", needsYouReason:"organic_continuation_sale" };
     if (plan === "balance_learn_weekly") return { productName: "Balance Learn membership", subtype: "balance_learn_sale", recurringInterval: "week", checkinsPerWeek: "1", callsPerWeek: "0", needsYouReason: "balance_learn_sale" };
@@ -472,7 +473,7 @@ async function recordStripeGrowthOutcome({ payload, mirrorRow, userIds, stripeEv
 async function syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscription, invoice, session } = {}) {
     if (!subscription) return null;
     await verifyOrganicContinuation(subscription,supabaseRequest);
-    verifyStandardTextSubscription(subscription);
+    verifySelfServeCoachingSubscription(subscription);
     if(isManagedCoachingSubscription(subscription)&&ACTIVE_SUBSCRIPTION_STATUSES.has(subscription.status)) {
         const paidInvoice=invoice|| (subscription.latest_invoice ? await stripe.invoices.retrieve(normalizeStripeId(subscription.latest_invoice)) : null);
         if(paidInvoice?.status!=='paid')return null;
@@ -541,9 +542,9 @@ async function syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscripti
     }
     const patchedUsers = replacedByActiveSubscription
         ? []
-        : await patchUsersForSubscription(payload, { patchByEmail: isActive, ownerOnly: isStandardTextSubscription(subscription) });
+        : await patchUsersForSubscription(payload, { patchByEmail: isActive, ownerOnly: isSelfServeCoachingSubscription(subscription) });
     const userIds = patchedUsers.map(row => row.id);
-    if(isStandardTextSubscription(subscription)&&isActive&&userIds.includes(subscription.metadata.user_id))await ensureTextCoachingRelationship(subscription,supabaseRequest);
+    if(isSelfServeCoachingSubscription(subscription)&&isActive&&userIds.includes(subscription.metadata.user_id))await ensureSelfServeCoachingRelationship(subscription,supabaseRequest);
 
     if (mirrorRow && userIds[0] && mirrorRow.user_id !== userIds[0]) {
         await supabaseRequest(
@@ -694,7 +695,7 @@ function buildSubscriptionSaleAlert({ adminId, syncResult, stripeEvent, subscrip
             recurring_interval: offer.recurringInterval,
             commitment_weeks: offer.commitmentWeeks || null,
             checkins_per_week: offer.checkinsPerWeek,
-            ...(isStandardTextSubscription(subscription)?{checkin_format:'text',meal_plan:'included',programme_updates:'weekly',setup_review_required:true,setup_checklist:['Review account setup and suitability','Confirm a video-backed programme and meal plan','Weekly text check-in; no voice or outreach enrolment']} : {}),
+            ...(isSelfServeCoachingSubscription(subscription)?{checkin_format:subscription.metadata.checkin_format||'text',meal_plan:'included',programme_updates:'weekly',setup_review_required:true,setup_checklist:['Review account setup and suitability','Confirm a video-backed programme and meal plan',subscription.metadata.checkin_format==='voice'?'Weekly voice-note check-in'+(subscription.metadata.calls_per_week==='1'?'; one weekly 45-minute Zoom PT session':''):'Weekly text check-in']} : {}),
             calls_per_week: offer.callsPerWeek,
             email: email || null,
             user_id: clientId,
@@ -1232,10 +1233,10 @@ export default async (request, context) => {
             const affected=await organicBillingSubscriptions(stripeEvent,path=>stripeRestRequest(STRIPE_SECRET_KEY,'GET',path),isManagedCoachingSubscription);
             for(const subscription of affected) {
                 await verifyOrganicContinuation(subscription,supabaseRequest);
-                verifyStandardTextSubscription(subscription);
+                verifySelfServeCoachingSubscription(subscription);
                 if(stripeEvent.type==='invoice.payment_failed')await syncStripeSubscriptionToBalance(stripe,stripeEvent,{subscription,invoice:stripeEvent.data.object});
-                const standardText=isStandardTextSubscription(subscription);
-                await insertSubscriptionSaleAlert({idempotency_key:`organic_billing:${stripeEvent.id}:${subscription.id}`,coach_id:'00a6605e-8edb-4917-85ba-24a23f179059',client_id:subscription.metadata.user_id,alert_type:'subscription_sale',priority:'urgent',title:standardText?'Text membership billing needs review':'Continuation billing needs review',description:`Stripe reported ${stripeEvent.type} for ${standardText?'the standard text membership':'the optional organic continuation'}. Review the payment in Stripe before changing access or contacting the member.`,status:'pending',suggested_message:null,data:{subtype:standardText?'standard_text_billing_review':'organic_continuation_billing_review',operator_queue:'needs_you',needs_you_required:true,stripe_event_id:stripeEvent.id,stripe_subscription_id:subscription.id,stripe_event_type:stripeEvent.type}});
+                const standardText=isSelfServeCoachingSubscription(subscription);
+                await insertSubscriptionSaleAlert({idempotency_key:`organic_billing:${stripeEvent.id}:${subscription.id}`,coach_id:'00a6605e-8edb-4917-85ba-24a23f179059',client_id:subscription.metadata.user_id,alert_type:'subscription_sale',priority:'urgent',title:standardText?'Coaching membership billing needs review':'Continuation billing needs review',description:`Stripe reported ${stripeEvent.type} for ${standardText?'the coaching membership':'the optional organic continuation'}. Review the payment in Stripe before changing access or contacting the member.`,status:'pending',suggested_message:null,data:{subtype:standardText?'standard_text_billing_review':'organic_continuation_billing_review',operator_queue:'needs_you',needs_you_required:true,stripe_event_id:stripeEvent.id,stripe_subscription_id:subscription.id,stripe_event_type:stripeEvent.type}});
             }
         }
         if (stripeEvent.type === 'invoice.paid') {
