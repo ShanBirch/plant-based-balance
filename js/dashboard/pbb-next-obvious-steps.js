@@ -1381,7 +1381,7 @@
 
   function pickSuggestions() {
     var selectedGoalIds = getSelectedGoalIds();
-    if (isShowAllEnabled()) return ACTIONS.slice();
+    if (isShowAllEnabled()) return ACTIONS.filter(function(action){return !window.BalanceFreeStarter?.allowsAction || window.BalanceFreeStarter.allowsAction(action);});
     if (areDailyActionsComplete(selectedGoalIds)) return [];
 
     var targetActions = dailyActionSet(selectedGoalIds);

@@ -17,9 +17,10 @@ const onboardingIds = [
   'weekly_goals_intro'
 ];
 
-function loadPlan({ createdAt, seen = [], week = 1, goals = [], metaTrial = false, loadingJourney = false, renderCard = false }) {
+function loadPlan({ createdAt, seen = [], week = 1, goals = [], metaTrial = false, loadingJourney = false, renderCard = false, accessPolicy=null, showAll=false, suggestions=false }) {
   const userId = 'test-user';
   const storage = new Map();
+  if(showAll)storage.set('pbb_next_steps_show_all','1');
   seen.forEach(id => storage.set(`pbb_onboarding_step_seen:${userId}:${id}`, '1'));
 
   const localStorage = {
@@ -61,6 +62,7 @@ function loadPlan({ createdAt, seen = [], week = 1, goals = [], metaTrial = fals
     getComputedStyle() { return { display: 'none', visibility: 'visible', opacity: '1' }; }
   };
   window.window = window;
+  if(accessPolicy)window.BalanceFreeStarter=accessPolicy;
 
   vm.runInNewContext(source, {
     window,
@@ -81,8 +83,21 @@ function loadPlan({ createdAt, seen = [], week = 1, goals = [], metaTrial = fals
     window.pbbNextSteps.refresh();
     return card;
   }
-  return window.pbbNextSteps.getPlan();
+  return suggestions?window.pbbNextSteps.getSuggestions():window.pbbNextSteps.getPlan();
 }
+
+test('real free-month policy excludes every course to-do across goals, weeks and legacy show-all',async()=>{
+ const values=new Map(),storage={getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v),removeItem:k=>values.delete(k)};
+ const window={currentUser:{id:'test-user'},localStorage:storage,sessionStorage:storage,document:{addEventListener(){},documentElement:{classList:{remove(){},toggle(){}}},querySelector:()=>null,getElementById:()=>null},fetch:async()=>({ok:true,json:async()=>({starter:{experience:'coached_month_v1',workoutsReady:true,endsAt:'2099-01-01',setup:{}}})})};
+ vm.runInNewContext(fs.readFileSync(path.resolve(__dirname,'../lib/free-starter.js'),'utf8'),{window});await window.BalanceFreeStarter.resolve({user:{id:'test-user'},access_token:'fixture'});
+ for(const showAll of [false,true])for(const week of [1,2,5]){
+  const input={createdAt:'2026-11-01T00:00:00Z',week,showAll,accessPolicy:window.BalanceFreeStarter,goals:['daily_quiz_days','questions_answered','perfect_lessons']};
+  for(const suggestions of [false,true]){
+   const plan=loadPlan({...input,suggestions});const ids=plan.map(item=>item.id);
+   for(const id of ['foundations_intro','learn_weekly_action','balance_journey','fitgotchi_intro','quiz'])assert.equal(ids.includes(id),false,`${week}/${showAll}/${suggestions}/${id}`);
+  }
+ }
+});
 
 test('first Home render uses To do next while course state is still loading', () => {
   const card = loadPlan({ createdAt: '2026-09-18T04:42:50Z', loadingJourney: true, renderCard: true });
