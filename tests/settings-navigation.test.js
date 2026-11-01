@@ -54,19 +54,11 @@ test('phone back and both platform edge gestures close the active Settings sheet
   assert.match(navigation, /if \(isBack && deltaY < 90\) window\.history\.back\(\)/);
 });
 
-test('cancellation returns to Settings by button, browser history, swipe, or safe fallback', () => {
-  assert.match(cancellation, /id="subscription-settings-back"/);
-  assert.match(cancellation, /function returnToBalanceSettings\(\)/);
-  assert.match(cancellation, /window\.history\.back\(\)/);
-  assert.match(cancellation, /dashboard\.html\?tab=profile/);
-  assert.match(cancellation, /enableCancellationSwipeBack/);
-  assert.match(navigation, /cancellation\.html\?from=settings/);
-});
-
-test('the navigation layer is loaded and refreshed on returning phones', () => {
-  assert.match(dashboard, /pbb-settings-navigation\.js\?v=2-your-checkin/);
-  assert.match(sw, /pbb-app-v550-replay-settings-card/);
-  assert.match(sw, /pbb-settings-navigation\.js\?v=2-your-checkin/);
+test('membership and cancellation return directly to Home without replaying setup',()=>{
+ assert.match(cancellation,/dashboard\.html\?tab=dashboard&settings_return=1/);
+ assert.doesNotMatch(cancellation,/window\.history\.back\(\)/);
+ assert.match(navigation,/membership\.html\?from=settings/);
+ assert.match(dashboard,/onclick="openMembershipSettings\(\)"/);
 });
 
 test('opening a Settings sheet creates one back step and popstate closes it', async () => {

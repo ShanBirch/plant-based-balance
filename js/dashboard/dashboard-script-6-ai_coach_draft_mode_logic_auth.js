@@ -1177,7 +1177,7 @@ window.loadChatHistory = async function() {
 
         if (error) throw error;
 
-        if ((!messages || messages.length === 0) && !showBalanceWelcome) {
+        if (!messages || messages.length === 0) {
             const profile = await window.getUserProfile();
             const userName = profile?.name || '';
             const greeting = userName ? `Hey ${userName}!` : 'Hey!';
@@ -3467,7 +3467,7 @@ async function loadGroupChatMessages(chatId) {
 
         if (error) throw error;
 
-        if ((!messages || messages.length === 0) && !showBalanceWelcome) {
+        if (!messages || messages.length === 0) {
             container.innerHTML = `
                 <div style="text-align: center; padding: 40px; color: var(--text-muted);">
                     <div style="font-size: 2rem; margin-bottom: 10px;">💬</div>
@@ -8216,9 +8216,7 @@ async function loadDirectMessages(recipientId) {
             .order('created_at', { ascending: false })
             .limit(50);
         const messages = recentMessages ? recentMessages.slice().reverse() : [];
-        const showBalanceWelcome = !!(window.socialJourney
-            && typeof window.socialJourney.shouldShowWelcomeMessage === 'function'
-            && window.socialJourney.shouldShowWelcomeMessage(recipientId));
+        const showBalanceWelcome = false; // Welcome is a persisted Inbox message, never a course redirect.
         const balanceWelcomeHtml = showBalanceWelcome ? `
             <div class="balance-onboarding-inbox-message" style="display:grid; gap:10px; margin:8px 0 18px;">
                 ${window.BalanceMetaAdTrial?.getCoachWelcomeHtml() || '<p>Welcome to Balance. This is where we can chat about your progress.</p>'}

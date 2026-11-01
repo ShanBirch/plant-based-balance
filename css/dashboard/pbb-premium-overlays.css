@@ -1065,14 +1065,11 @@ html[data-pbb-theme="dark"] #ai-plan-meals-list .card-body [style*="background:#
     touch-action: auto;
 }
 
-.feed-level-leaderboard:focus-within .feed-level-leaderboard-body,
-.feed-level-leaderboard:active .feed-level-leaderboard-body,
 .feed-level-leaderboard.is-open .feed-level-leaderboard-body {
     display: block;
 }
 
-.feed-level-leaderboard:focus-within .feed-level-leaderboard-chevron,
-.feed-level-leaderboard:active .feed-level-leaderboard-chevron {
+.feed-level-leaderboard.is-open .feed-level-leaderboard-chevron {
     transform: rotate(180deg);
     background: rgba(255, 255, 255, 0.16);
 }
@@ -13513,9 +13510,7 @@ html:not([data-pbb-theme="light"]) #view-profile .settings-v2-more {
     width: auto;
 }
 
-#view-profile .settings-community-games .feed-level-leaderboard.is-open .feed-level-leaderboard-chevron,
-#view-profile .settings-community-games .feed-level-leaderboard:focus-within .feed-level-leaderboard-chevron,
-#view-profile .settings-community-games .feed-level-leaderboard:active .feed-level-leaderboard-chevron {
+#view-profile .settings-community-games .feed-level-leaderboard.is-open .feed-level-leaderboard-chevron {
     background: transparent;
     transform: rotate(90deg);
 }

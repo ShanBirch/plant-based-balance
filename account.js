@@ -2,6 +2,10 @@
  if (!window.supabase) { document.getElementById('account-status').textContent='Account services could not load. Please refresh and try again.'; return; }
  const client = window.supabase.createClient('https://hzapaorxqboevxnumxkv.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6YXBhb3J4cWJvZXZ4bnVteGt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2NjA3MTYsImV4cCI6MjA4NDIzNjcxNn0.L8ZuxevbB1pNx2nXtIiiQ-6dZSeqfdGuiEvscljOxq0');
  const el = id => document.getElementById(id);
+ if(new URLSearchParams(location.search).get('from')==='settings'){
+  const back=document.createElement('a');back.className='account-button';back.href='/dashboard.html?tab=dashboard&settings_return=1';back.textContent='Back to Balance';document.querySelector('.account-wrap').prepend(back);
+ }
+
  function signedOut() { el('account-content').hidden=true; el('account-login').hidden=false; el('account-status').textContent=''; }
  async function init() {
   try {

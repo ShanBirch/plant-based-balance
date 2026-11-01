@@ -137,31 +137,6 @@ async function openBillingPortal() {
     const btn = document.getElementById('settings-payment-method-btn');
     const originalText = btn ? btn.textContent : '';
     try {
-        const platformName = window.Platform && typeof window.Platform.name === 'function'
-            ? window.Platform.name()
-            : (window.Capacitor && typeof window.Capacitor.getPlatform === 'function'
-                ? window.Capacitor.getPlatform()
-                : 'web');
-
-        if (platformName === 'ios' || platformName === 'android') {
-            const storeUrl = platformName === 'ios'
-                ? 'https://apps.apple.com/account/subscriptions'
-                : 'https://play.google.com/store/account/subscriptions?package=com.fitgotchi.app';
-
-            if (btn) {
-                btn.disabled = true;
-                btn.textContent = 'Opening...';
-            }
-
-            if (window.Capacitor?.Plugins?.Browser?.open) {
-                await window.Capacitor.Plugins.Browser.open({ url: storeUrl });
-            } else {
-                const opened = window.open(storeUrl, '_blank', 'noopener,noreferrer');
-                if (!opened) window.location.href = storeUrl;
-            }
-            return;
-        }
-
         if (!window.currentUser?.id) {
             throw new Error('Please log in again to manage your payment method.');
         }
@@ -184,7 +159,7 @@ async function openBillingPortal() {
             btn.textContent = 'Opening...';
         }
 
-        const returnUrl = window.location.origin + window.location.pathname + '?tab=profile';
+        const returnUrl = window.location.origin + '/dashboard.html?tab=dashboard&settings_return=1';
         const response = await fetch('/.netlify/functions/create-billing-portal-session', {
             method: 'POST',
             headers: {
@@ -8097,7 +8072,7 @@ function isTransferredWizardClient() {
 
 function isWizardSlideSkipped(step) {
     if (step === 5 && window.BalanceCoachingSupport?.isEligible() !== true) return true;
-    if (window.BalanceFreeStarter?.coached?.() && [3,4,6,7].includes(step)) return true;
+    if (window.BalanceFreeStarter?.coached?.() && !window.BalanceFreeStarter?.selfSetup?.() && [3,4,6,7].includes(step)) return true;
     // Cycle alignment is relevant only when the member explicitly chose "For her".
     // Keep this rule here so forward, back, and resumed onboarding paths all agree.
     if (step === 3 && normalizeGenderValue(selectedGender) !== 'female') return true;
@@ -9530,7 +9505,7 @@ function skipWizardChatKnownProfileSteps() {
         const profile = window.currentUserProfile || window.userProfile || window.profileData || {};
         const isTransferred = !!(profile.is_transferred_client || window.__pbbTransferredSetupPending);
         const knownName = getWizardChatKnownProfileName();
-        const coaching = window.BalanceFreeStarter?.coached?.() ? window.BalanceFreeStarter.access().setup : null;
+        const coaching = (window.BalanceFreeStarter?.coached?.() && !window.BalanceFreeStarter?.selfSetup?.()) ? window.BalanceFreeStarter.access().setup : null;
         if (coaching && ['weekly_capacity','equipment_access','why_now','main_blocker','movement_limits'].includes(step.key)) {
             const known = { weekly_capacity: ({1:'one_or_two',2:'one_or_two',3:'three',4:'four',5:'five',6:'six'})[coaching.schedule.length], equipment_access:coaching.equipment, why_now:coaching.goal, main_blocker:coaching.mainBlocker || '', movement_limits:'' };
             wizardChatAnswers[step.key] = known[step.key];
@@ -9576,7 +9551,7 @@ function askWizardChatQuestion(options = {}) {
             setTimeout(() => wizardNext(), 0);
             return;
         }
-        wizardChatMessages = [{ role: 'coach', text: window.BalanceFreeStarter?.supportOnly?.() ? 'Keep your current training with your trainer. Finish your profile, then open Inbox for messages and weekly check-ins with Shannon. No replacement workout programme is assigned.' : window.BalanceFreeStarter?.coached?.() ? 'Your program is already prepared around the days and times we agreed. Just finish your profile and open Balance. Inbox has your messages and check-ins; Nutrition has meal planning.' : window.BalanceFreeStarter?.active() ? 'Your free starter includes two home workouts. Choose the days and session length that suit you next. Shannon will review your setup before assigning the exercises. You can start the course without payment.' : `Perfect. Based on your real week, I would start with ${getWizardStarterRoutineSummary()}. We will keep that minimum light until following through feels normal, then progress it. It is a suggestion, so you can change the frequency and exact days next.` }];
+        wizardChatMessages = [{ role: 'coach', text: window.BalanceFreeStarter?.supportOnly?.() ? 'Keep your current training with your trainer. Finish your profile, then open Inbox for messages and weekly check-ins with Shannon. No replacement workout programme is assigned.' : window.BalanceFreeStarter?.selfSetup?.() ? 'Choose the training days that fit your week next. Then choose how much optional support you would like.' : window.BalanceFreeStarter?.coached?.() ? 'Your program is already prepared around the days and times we agreed. Just finish your profile and open Balance. Inbox has your messages and check-ins; Nutrition has meal planning.' : window.BalanceFreeStarter?.active() ? 'Your free starter includes two home workouts. Choose the days and session length that suit you next. Shannon will review your setup before assigning the exercises. You can start the course without payment.' : `Perfect. Based on your real week, I would start with ${getWizardStarterRoutineSummary()}. We will keep that minimum light until following through feels normal, then progress it. It is a suggestion, so you can change the frequency and exact days next.` }];
         renderWizardChatMessages();
         renderWizardChatProgress();
         renderWizardChatControls();
@@ -9842,7 +9817,7 @@ function saveWizardChatIntakeToInputs() {
     setWizardFieldValue('wizard-competing-priorities', answers.main_blocker);
     setWizardFieldValue('wizard-weekly-capacity', answers.weekly_capacity);
     setWizardFieldValue('wizard-routine-window', answers.routine_window);
-    const coachedSetup = window.BalanceFreeStarter?.coached?.() ? window.BalanceFreeStarter.access().setup : null;
+    const coachedSetup = (window.BalanceFreeStarter?.coached?.() && !window.BalanceFreeStarter?.selfSetup?.()) ? window.BalanceFreeStarter.access().setup : null;
     setWizardFieldValue('wizard-starter-session-minutes', coachedSetup?.sessionMinutes || inferredPlan.starterSessionMinutes);
     setWizardFieldValue('wizard-recommended-frequency', coachedSetup?.schedule.length || getWizardRecommendedStarterFrequency(answers));
     setWizardFieldValue('wizard-why-now', answers.why_now);
@@ -10282,6 +10257,14 @@ function resetFreshOnboardingPreferences() {
 }
 
 async function checkAndTriggerOnboarding() {
+    // Returning from a deliberately opened Settings page is navigation only.
+    // Keep unfinished setup saved for the next normal login; never mark it complete.
+    if(new URLSearchParams(window.location.search).get('settings_return')==='1'){
+        window.history.replaceState({},'', '/dashboard.html');
+        window._onboardingWizardPending=false;
+        return;
+    }
+
     // A verified read-only admin preview must never start a member questionnaire.
     if (window.isAdminViewing) { enterCoachPreparedDashboard(); return; }
     if ((window.BalanceOnboardingProgress?.isCoachGuidedMember() || window._pbbUsingCachedSessionUser) && window.supabaseClient?.auth?.getUser) {
@@ -12473,7 +12456,7 @@ async function wizardNext() {
         console.log("Step 2 data collected:", quizData);
 
         // If male, skip cycle tracking (step 3) and go directly to step 4
-        if (window.BalanceFreeStarter?.coached?.()) {
+        if (window.BalanceFreeStarter?.coached?.() && !window.BalanceFreeStarter?.selfSetup?.()) {
             currentWizardStep = finalWizardStep;
             updateWizardUI();
             return;
@@ -13741,6 +13724,7 @@ function prefillWizardAssignedTrainingDecisions() {
 async function loadWizardAssignedProgram() {
     wizardAssignedProgram = null;
     wizardAssignedCalendarInitialized = false;
+    if(window.BalanceFreeStarter?.selfSetup?.()) return null;
     const userId = window.currentUser && window.currentUser.id;
     if (!userId || !window.supabaseClient) return null;
     try {
@@ -13829,7 +13813,7 @@ function getWizardAssignedWorkoutOptions(day) {
     return options;
 }
 function generateWizardCalendar() {
-    if (window.BalanceFreeStarter?.coached?.()) return;
+    if (window.BalanceFreeStarter?.coached?.() && !window.BalanceFreeStarter?.selfSetup?.()) return;
     if (wizardAssignedProgram) {
         initializeWizardAssignedCalendar();
         return;
@@ -14514,6 +14498,14 @@ function playHeaderCoinGrantAnimation(startBalance, endBalance, grantedAmount) {
 // ========== END WELCOME BONUS ==========
 
 async function finishOnboarding() {
+    if(window.BalanceFreeStarter?.selfSetup?.()){
+        try{
+            await claimMetaPreviewWorkoutCalendar(window.currentUser.id);
+            const result=await window.supabaseClient.from('custom_workout_programs').update({is_active:false}).eq('user_id',window.currentUser.id).eq('is_active',true);
+            if(result.error)throw result.error;
+            window.activeCustomProgramCache=null;
+        }catch(error){window.showToast?.('Your training choices could not be saved. Please try again.','error');return;}
+    }
     const completingTransferredSetup = !!window.__pbbTransferredSetupPending;
     try { window.trackBalanceActivity('onboarding_finish_started', { transferred_setup: completingTransferredSetup }, { immediate:true }); } catch(e) {}
     window.BalanceOnboardingFunnel?.track('setup', 'saving_plan', 'viewed');
@@ -14577,7 +14569,7 @@ async function finishOnboarding() {
     localStorage.setItem('onboardingComplete', 'true');
     localStorage.setItem('plantbased_onboarding_complete', 'true'); // Also set alternate key for consistency
     window.dispatchEvent(new CustomEvent('pbbOnboardingComplete'));
-    window.BalanceOnboardingProgress?.save('tour', { wizard:null, tour:null });
+    window.BalanceOnboardingProgress?.clear();
     window.BalanceOnboardingFunnel?.track('screen', 'slide_' + currentWizardStep, 'completed', { step_number: currentWizardStep });
     window.BalanceOnboardingFunnel?.track('setup', 'saving_plan', 'completed');
     window.BalanceOnboardingFunnel?.track('setup', 'setup', 'completed');
@@ -14595,19 +14587,6 @@ async function finishOnboarding() {
         delete wizardEl.dataset.launchState;
     }
     setOnboardingScrollLock(false);
-    // Hand off immediately through the retrying client-tour starter. The guided
-    // tour script and its dashboard targets may finish mounting just after the
-    // wizard closes, so a single delayed attempt is not reliable.
-    if (window.metaAdTrialMode) {
-        // Start orientation as soon as the wizard closes. Meal-plan preparation
-        // continues below and the Nutrition tour step also retries it. Keeping
-        // this handoff behind unrelated async persistence can leave a guest on
-        // Home with "Finish your guided tour" but no tour visible.
-        setTimeout(() => startWizardMetaPreviewTour(), 80);
-    } else {
-        setTimeout(() => startWizardClientActivationTour(), 350);
-    }
-
     // --- Release all story/wizard WebGL contexts before restoring tamagotchi ---
     // On iOS, use the MV manager to deactivate all story/wizard viewers (converts
     // them back to inert placeholders).  On non-iOS, just release WebGL contexts.
@@ -14830,6 +14809,7 @@ async function finishOnboarding() {
     if (window.currentUser) {
         try {
             await dbHelpers.users.update(window.currentUser.id, { onboarding_complete: true });
+            await window.BalanceInboxWelcome?.ensure();
             console.log("Onboarding marked complete in database");
         } catch (e) {
             console.warn("Failed to mark onboarding complete in database:", e);
@@ -16817,7 +16797,7 @@ async function renderMovementView() {
     // Personalised-program members should see their own weekly plan here. The
     // coach sample-workout card is useful for browsing, but makes an assigned
     // plan look like several conflicting programs.
-    if (usingCustomProgram) {
+    if (usingCustomProgram && !window.BalanceFreeStarter?.coached?.()) {
         const personalWeekDiv = document.createElement('div');
         const personalSessions = WEEKLY_SCHEDULE
             .filter(item => item?.inlineWorkout && Array.isArray(item.inlineWorkout.exercises) && item.inlineWorkout.exercises.length > 0)
@@ -16841,7 +16821,7 @@ async function renderMovementView() {
             <div style="display:flex; flex-wrap:wrap; gap:6px;">${personalSessions}</div>
         `;
         gridContainer.appendChild(personalWeekDiv);
-    } else {
+    } else if (!window.BalanceFreeStarter?.coached?.()) {
     // Add 'Coach's Workouts This Week' Card for people browsing the library.
     const weekDiv = document.createElement('div');
     weekDiv.id = 'mvmt-week-workouts-card';

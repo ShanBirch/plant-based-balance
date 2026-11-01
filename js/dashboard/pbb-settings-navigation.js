@@ -206,6 +206,8 @@
         holdUntil = Math.max(holdUntil, Date.now() + Math.max(0, Number(milliseconds) || 0));
     };
 
+    window.openMembershipSettings = function(){ window.location.href='/membership.html?from=settings'; };
+
     window.openCancellationSettings = function () {
         window.location.href = '/cancellation.html?from=settings';
     };

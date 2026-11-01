@@ -8,7 +8,7 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const nat = 'e1403726-19bc-4663-85d4-59b668791a80';
 function context(id = nat) {
   const storage = new Map();
-  const window = {currentUser:{id},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)}};
+  const window = {currentUser:{id},location:{search:''},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)}};
   vm.runInNewContext(read('lib/onboarding-progress.js'), {window});
   return {window, storage};
 }
@@ -36,19 +36,14 @@ test('regular members and ordinary guests cannot launch tours', () => {
   assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(), true);
 });
 
-test('new members get a resumable first tour without inheriting another account completion', () => {
-  const {window,storage} = context('new-member');
-  window.currentUser.created_at = '2026-09-18T04:42:50Z';
-  storage.set('featureTourComplete', '1'); // Prior account on the same device.
-  assert.equal(window.BalanceOnboardingProgress.needsFirstRunTour(), true);
-  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(), false);
-  window.BalanceOnboardingProgress.save('tour', {tour:{step:3}});
-  assert.equal(window.BalanceOnboardingProgress.read().tour.step, 3);
-  window.BalanceOnboardingProgress.completeFirstRunTour();
-  assert.equal(window.BalanceOnboardingProgress.needsFirstRunTour(), false);
-  window.currentUser = {id:'another-new-member',created_at:'2026-09-18T05:00:00Z'};
-  assert.equal(window.BalanceOnboardingProgress.needsFirstRunTour(), true);
-  assert.equal(window.BalanceOnboardingProgress.read(), null);
+test('new members never resume a retired app tour, including across accounts', () => {
+ const {window,storage}=context('new-member');
+ window.currentUser.created_at='2026-11-01T04:42:50Z';
+ storage.set('pbb_onboarding_progress_v1:new-member',JSON.stringify({version:1,stage:'tour',tour:{step:3}}));
+ assert.equal(window.BalanceOnboardingProgress.needsFirstRunTour(),false);
+ assert.equal(window.BalanceOnboardingProgress.read(),null);
+ window.currentUser={id:'another-new-member',created_at:'2026-11-01T05:00:00Z'};
+ assert.equal(window.BalanceOnboardingProgress.needsFirstRunTour(),false);
 });
 
 test('remote completion keeps a new member out of the tour on a fresh device', () => {
@@ -73,11 +68,11 @@ test('coach-guided onboarding suppresses only the current member tour and preser
   storage.clear(); // Fresh phone, same authenticated preference.
   assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),true);
   window.currentUser={id:'another-member',created_at:'2026-10-07T00:00:00Z'};
-  assert.equal(window.BalanceOnboardingProgress.needsFirstRunTour(),true);
-  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),false);
+  assert.equal(window.BalanceOnboardingProgress.needsFirstRunTour(),false);
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),true);
 });
 
-test('completed setup resumes a missed new-member tour after Home startup', async () => {
+test('completed setup stays on Home without resuming the retired tour', async () => {
   const {window, storage} = context('new-member');
   window.currentUser.created_at = '2026-09-18T04:42:50Z';
   let resume, starts = 0, events = 0;
@@ -86,7 +81,7 @@ test('completed setup resumes a missed new-member tour after Home startup', asyn
   const source = read('js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js');
   const a = source.indexOf('async function checkAndTriggerOnboarding()');
   const b = source.indexOf('function initOnboardingWizard()', a);
-  const ctx = {window,localStorage:window.localStorage, console, CustomEvent:function(){},
+  const ctx = {window,URLSearchParams,getActiveUserGender:()=> 'male',localStorage:window.localStorage, console, CustomEvent:function(){},
     dbHelpers:{users:{get:async()=>({onboarding_complete:true})}},
     startWizardClientActivationTour:()=>starts++};
   vm.runInNewContext(source.slice(a,b), ctx);
@@ -94,8 +89,8 @@ test('completed setup resumes a missed new-member tour after Home startup', asyn
   assert.equal(events,1);
   assert.equal(storage.get('pbb_onboarding_owner_user_id'),'new-member');
   assert.equal(starts,0);
-  resume();
-  assert.equal(starts,1);
+  resume?.();
+  assert.equal(starts,0);
 });
 
 test('daily-plan initialization runs when setup completes after startup', () => {
@@ -122,15 +117,15 @@ test('active Meta free-look guests and owning accounts retain tour checkpoints',
   const {window} = context('meta-lead');
   const trial = {ownerUserId:'meta-lead',activatedAt:123};
   window.BalanceMetaAdTrial = {readState:()=>trial,isActive:()=>true};
-  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),false);
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),true);
   window.BalanceOnboardingProgress.save('tour',{tour:{step:2}});
-  assert.equal(window.BalanceOnboardingProgress.read().tour.step,2);
+  assert.equal(window.BalanceOnboardingProgress.read(),null);
   window.currentUser = null;
   delete trial.ownerUserId;
-  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),false);
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),true);
   window.currentUser = {id:'shared-preview-guest'};
   window.guestMode = true;
-  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),false);
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),true);
 });
 test('real Meta trial activation, ownership restore and claim respect tour eligibility', () => {
   const {window} = context('meta-lead');
@@ -140,7 +135,7 @@ test('real Meta trial activation, ownership restore and claim respect tour eligi
   const trial = window.BalanceMetaAdTrial;
   window.localStorage.setItem(trial.STATE_KEY, JSON.stringify({variant:trial.VARIANT,activatedAt:123,accountFirst:true,ownerUserId:'meta-lead'}));
   assert.equal(trial.restoreAuthenticatedMode('meta-lead'),true);
-  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),false);
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),true);
   window.currentUser = {id:'existing-member'};
   assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),true);
   window.currentUser = {id:'meta-lead'};
@@ -151,7 +146,7 @@ test('claimed, inactive, unowned and another account preview cannot re-enable a 
   const {window} = context();
   const trial = {ownerUserId:nat};
   window.BalanceMetaAdTrial = {readState:()=>trial,isActive:()=>true};
-  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),false);
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),true);
   trial.claimedAt = 123;
   assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),true);
   delete trial.claimedAt;
@@ -165,7 +160,7 @@ test('claimed, inactive, unowned and another account preview cannot re-enable a 
 });
 test('dedicated QA accounts remain eligible, but admin client viewing cannot start tours', () => {
   const {window} = context('e6781875-f657-4f91-91e1-1289c0e345f8');
-  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),false);
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),true);
   window.isAdminViewing = true;
   assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),true);
 });
@@ -173,9 +168,9 @@ test('forced replay, activation and course tour all stop before opening UI or sc
   const {window} = context();
   const html = read('dashboard.html');
   const start = html.indexOf('  window.startFeatureTour = function(force, options){');
-  const end = html.indexOf('  window.replayFeatureTour', start);
+  const end = html.indexOf('\n  };', start)+6;
   vm.runInNewContext(html.slice(start,end), {window});
-  for (const args of [[true,{}],['full',{}],[true,{clientActivation:true}],['full',{fitgotchiCourse:true}]]) {
+  for (const args of [[true,{}],['full',{}],[true,{clientActivation:true}]]) {
     assert.equal(window.startFeatureTour(...args),false);
   }
   const wizard = read('js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js');

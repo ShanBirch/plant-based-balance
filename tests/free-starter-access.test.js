@@ -86,12 +86,12 @@ test('revoked cached starter access resumes the ordinary route once without reta
     assert.equal(resumes,1);
     assert.equal(w.localStorage.getItem('pbb_free_starter_owner'),null);
 });
-function endpoint({authOk=true, anonymous=false, rows=[], profiles=[], programs=rows, queryError=false, paidContinuation=false}={}) {
+function endpoint({authOk=true, anonymous=false, rows=[], profiles=[], programs=rows, queryError=false, paidContinuation=false,selfSetup=false}={}) {
     const calls=[];
     const exports={};
     vm.runInNewContext(read('netlify/functions/free-starter-access.js'),{
         exports, process:{env:{SUPABASE_URL:'https://test.invalid',SUPABASE_SERVICE_ROLE_KEY:'server-only'}},
-        require:name=>name==='node:crypto'?require(name):{supabaseQuery:async(...args)=>{calls.push(args);if(queryError)throw Error('conflict');return args[0]==='rpc/organic_outreach_paid_continuation_allowed'?paidContinuation:args[0].startsWith('users?') ? profiles : args[0].startsWith('custom_workout_programs?') ? programs : rows;}},
+        require:name=>name==='node:crypto'?require(name):{supabaseQuery:async(...args)=>{calls.push(args);if(queryError)throw Error('conflict');return args[0]==='rpc/new_free_month_self_setup_allowed'?selfSetup:args[0]==='rpc/organic_outreach_paid_continuation_allowed'?paidContinuation:args[0].startsWith('users?') ? profiles : args[0].startsWith('custom_workout_programs?') ? programs : rows;}},
         fetch:async()=>({ok:authOk,json:async()=>({id:'verified-user',is_anonymous:anonymous})})
     });
     return {handler:exports.handler,calls};
@@ -211,4 +211,16 @@ test('check-in-only access needs server dates and cohort but never a replacement
   const bad=endpoint({rows:[{...grant,...change}]});
   assert.notEqual((await bad.handler({httpMethod:'POST',headers:{authorization:'Bearer test'},body:'{}'})).statusCode,200);
  }
+});
+
+
+test('verified self-setup free members need valid dates but no provisional programme',async()=>{
+ const rows=[{id:'g',experience:'coached_month_v1',starts_at:new Date().toISOString(),ends_at:new Date(Date.now()+86400000).toISOString(),setup:{},workouts_ready:true}];
+ for(const selfSetup of [true,false]){
+  const e=endpoint({rows,programs:[],selfSetup});const r=await e.handler({httpMethod:'POST',headers:{authorization:'Bearer test'},body:'{}'});
+  assert.equal(r.statusCode,selfSetup?200:409);
+  if(selfSetup){assert.equal(JSON.parse(r.body).starter.selfSetup,true);assert.equal(JSON.parse(r.body).starter.courseAccess,false);}
+ }
+ const e=endpoint({rows:[{...rows[0],ends_at:null}],programs:[],selfSetup:true});
+ assert.equal((await e.handler({httpMethod:'POST',headers:{authorization:'Bearer test'},body:'{}'})).statusCode,409);
 });

@@ -152,3 +152,10 @@ unreviewed automatic messages. Standard course/sales milestones skip this cohort
 
 
 Confirmed private continuation inclusions (Shannon, 1 November 2026): the meal plan and programming/nutrition inclusions and weekly programme updates match the AUD75 option; the weekly check-in is TEXT, not a voice note. No automatic voice-note entitlement. Keep the confirmed AUD14.70 weekly rate and separate existing terms. Do not call the offers identical, invent a usual-price comparison or add a seven-day deadline. AUD49.99/AUD15 suggestions remain exploratory, with no new tier or price change authorised.
+
+
+## Latest direction, 1 November 2026
+
+The app tour is retired for everyone, superseding earlier first-run tour instructions. New source-verified free-month members use the ordinary questionnaire, choose their own training days, then save optional support (both contacts off by default). Their chosen calendar is confirmed in account facts before provisional programmes are marked inactive. Existing clients retain their programmes. Movement omits the large weekly summary for coached-month members; courses and course To Dos remain locked/excluded.
+
+A completed new member receives one fixed, account-bound Shannon welcome in the real nudges Inbox. The To Do opens that conversation; no course-linked local welcome. No arbitrary message content, recipient, external contact or sender enrollment is added. Explicit QA eligibility permits only onboarding preferences, preserving operational source rules. Settings review remains isolated and does not reset the real account. Membership browsing and cancellation return to Home.

@@ -8,7 +8,15 @@ Use https://balanceneurosciencefitness.com for all new Balance websites and publ
 
 The separately authorised standard text membership is AUD49.99/week: meal plan, weekly programme updates, weekly TEXT check-in and app access. Initial minimum: three months implemented as 13 weekly payments (AUD649.87), then weekly until cancelled; no upfront fee or extra notice. Keep AUD75 voice support, other agreements and the private AUD14.70 no-minimum continuation separate. See docs/current-coaching-offers-20261021.md. Standard purchase creates no free/outreach cohort, optional reminder consent, Dot or auto-send permission.
 
-Use the EXISTING Settings > Guides, replays & app refresh > View onboarding action for Shannon to review canonical setup and guided tour. It opens the actual dashboard in an administrator-verified isolated frame. No duplicate Settings entry, real account reset or persistent programme/consent writes. Other completed members are not forced through onboarding. See docs/actual-onboarding-replay.md.
+Use the EXISTING Settings > Guides, replays & app refresh > View onboarding action for Shannon to review canonical setup. It opens the actual dashboard in an administrator-verified isolated frame. No duplicate Settings entry, real account reset or persistent programme/consent writes. Other completed members are not forced through onboarding. See docs/actual-onboarding-replay.md.
+
+## Setup, Inbox welcome and Settings correction, 1 November 2026
+
+Shannon retired the app tour for everyone. New verified free-month members choose their own training days through normal onboarding, then choose optional support. No preset or falsely coach-agreed schedule. Both support contacts default off. Persist the chosen calendar before retiring provisional programmes; existing coached clients keep their plans. No large weekly summary card in Movement for coached-month members. Courses remain locked and course To Dos absent.
+
+After completed setup, create one fixed welcome from Shannon in the actual nudges Inbox using ensure_balance_inbox_welcome(), not a local course-linked welcome card. The RPC accepts no caller-selected sender, recipient or text and is idempotent per member. It covers new November members and explicitly flagged QA; older clients are not bulk messaged. This grants no external sender permission. QA may exercise preferences only with all three explicit test markers; operational outreach predicates are unchanged.
+
+Settings membership management opens membership.html with current offers, direct card management and cancellation choices. Never choose an App Store based on device alone. Returning to Balance from these pages opens Home without marking an unfinished setup complete. Top Levels opens only through explicit state, never focus styling.
 
 ## App diagnostics (26 October 2026)
 

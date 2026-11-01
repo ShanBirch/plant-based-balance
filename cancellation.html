@@ -50,7 +50,7 @@
 </head>
 <body>
 <main>
-    <button id="subscription-settings-back" class="settings-back" type="button" onclick="returnToBalanceSettings()" aria-label="Back to Settings"><span aria-hidden="true">‹</span> Back to Settings</button>
+    <button id="subscription-settings-back" class="settings-back" type="button" onclick="returnToBalanceSettings()" aria-label="Back to Balance"><span aria-hidden="true">‹</span> Back to Balance</button>
     <div class="brand"><img src="balance_logo.png" alt="Balance"><span>BALANCE</span></div>
     <div class="eyebrow">Subscription settings</div>
     <h1>Cancel your subscription</h1>
@@ -91,7 +91,7 @@
 
     <section id="store-card" class="card hidden">
         <h2>Cancel where you paid</h2>
-        <p>No active direct Balance subscription was found. If you subscribed in the app, use the matching store below.</p>
+        <p>No active direct Balance subscription was found. Free-month access has no renewal or payment to cancel. If you paid through Apple or Google, use the matching store below.</p>
         <a class="button secondary" href="https://apps.apple.com/account/subscriptions" target="_blank" rel="noopener">Manage Apple subscription</a>
         <a class="button ghost" href="https://play.google.com/store/account/subscriptions?package=com.fitgotchi.app" target="_blank" rel="noopener">Manage Google Play subscription</a>
     </section>
@@ -110,20 +110,8 @@ if (new URLSearchParams(window.location.search).get('from') === 'website') {
  back.textContent='Back to My Account'; back.setAttribute('aria-label','Back to My Account');
 }
 function returnToBalanceSettings() {
-    var website = new URLSearchParams(window.location.search).get('from') === 'website';
-    var fallback = website ? '/account.html' : '/dashboard.html?tab=profile';
-    var fromSettings = new URLSearchParams(window.location.search).get('from') === 'settings';
-    if (!fromSettings || window.history.length <= 1) {
-        window.location.href = fallback;
-        return;
-    }
-    var fallbackTimer = window.setTimeout(function () {
-        window.location.href = fallback;
-    }, 700);
-    window.addEventListener('pagehide', function () {
-        window.clearTimeout(fallbackTimer);
-    }, { once:true });
-    window.history.back();
+ const website=new URLSearchParams(window.location.search).get('from')==='website';
+ window.location.href=website?'/account.html':'/dashboard.html?tab=dashboard&settings_return=1';
 }
 
 (function enableCancellationSwipeBack() {

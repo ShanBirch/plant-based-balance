@@ -37,7 +37,10 @@ exports.handler = async function (event) {
             rows = await supabaseQuery(`balance_free_starters?user_id=eq.${encodeURIComponent(user.id)}&revoked_at=is.null&select=id,workouts_ready,workout_limit,experience,starts_at,ends_at,setup&limit=1`);
         }
         const grant = rows?.[0];
-        if (grant?.experience === 'coached_month_v1' && !grant.setup?.supportOnly) {
+        const selfSetup=grant?.experience==='coached_month_v1'&&!grant.setup?.supportOnly
+            && await supabaseQuery('rpc/new_free_month_self_setup_allowed',{method:'POST',body:{p_user_id:user.id}})===true;
+        if (grant?.experience === 'coached_month_v1' && (!grant.starts_at || !grant.ends_at)) return response(409,{grantUnavailable:true,error:'Your free access dates need a setup check. Please ask Shannon.'});
+        if (grant?.experience === 'coached_month_v1' && !grant.setup?.supportOnly && !selfSetup) {
             const programs = await supabaseQuery(`custom_workout_programs?user_id=eq.${encodeURIComponent(user.id)}&is_active=eq.true&select=id&limit=1`);
             if (!programs?.[0]?.id || !grant.starts_at || !grant.ends_at) return response(409, { grantUnavailable:true, error:'Your coaching program needs a setup check. Please ask Shannon to check it before starting.' });
         }
@@ -48,7 +51,7 @@ exports.handler = async function (event) {
             return response(403, { expired: true, error: 'Your free coaching period has ended. Contact Shannon about continuing. No payment has been taken.' });
         }
         return response(200, { starter: grant ? { id: grant.id, workoutLimit: grant.experience === 'coached_month_v1' ? grant.setup?.schedule?.length : grant.workout_limit, workoutsReady: grant.workouts_ready,
-            experience: paidContinuation ? 'coached_continuation_v1' : grant.experience || 'legacy_starter', paidContinuation,
+            experience: paidContinuation ? 'coached_continuation_v1' : grant.experience || 'legacy_starter', paidContinuation, selfSetup,
             startsAt: grant.starts_at || null, endsAt: paidContinuation ? null : grant.ends_at || null,
             setup: grant.setup || null, courseAccess: grant.experience !== 'coached_month_v1' } : null });
     } catch (_) {

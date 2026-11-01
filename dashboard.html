@@ -207,10 +207,11 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 <!-- CRITICAL: Admin view-as localStorage isolation — runs BEFORE any other localStorage reads -->
 <script src="js/dashboard/script_part_1.js"></script>
 <!-- Paid-Facebook preview attribution must be available before auth-guard decides guest vs member mode. -->
-<script src="lib/onboarding-progress.js?v=12-tour-exit"></script>
+<script src="lib/onboarding-progress.js?v=13-no-app-tour"></script>
 <script defer src="js/dashboard/pbb-course-access.js?v=20261101-v1"></script>
-<script src="lib/free-starter.js?v=14-course-lock"></script>
-<script src="lib/meta-ad-trial.js?v=36-course-free-tour"></script>
+<script defer src="js/dashboard/pbb-inbox-welcome.js?v=20261101-v1"></script>
+<script src="lib/free-starter.js?v=15-self-setup"></script>
+<script src="lib/meta-ad-trial.js?v=37-setup-inbox"></script>
 
 <!-- CRITICAL: Hide loading overlay for returning users and restore cached FitGotchi state -->
 <script>
@@ -2026,7 +2027,7 @@ document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=38-tour-
     document.write('<script src="lib/learn-weekly-actions.js?v=retired-20261008"><\/script>');
     document.write('<script src="lib/learn-action-review.js?v=retired-20261008"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=coached-month-v1-20261023-lesson-handoff"><\/script>');
-    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=20261101-free-month-todos-v2"><\/script>');
+    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=20261101-inbox-welcome-v3"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=40-learning-only"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
@@ -2038,7 +2039,7 @@ window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=38-tou
     window._pbbDeferredQueue.push('lib/learn-weekly-actions.js?v=retired-20261008');
     window._pbbDeferredQueue.push('lib/learn-action-review.js?v=retired-20261008');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=coached-month-v1-20261023-lesson-handoff');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=20261101-free-month-todos-v2');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=20261101-inbox-welcome-v3');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=40-learning-only');
 }
 </script>
@@ -12591,7 +12592,7 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
                 <h3 id="settings-account-title">Account &amp; help</h3>
                 <div class="settings-v2-card">
                     <button id="settings-change-password" class="settings-v2-row" type="button" onclick="openSettingsDestination('password')"><span class="settings-v2-icon">🔒</span><span class="settings-v2-copy"><strong>Password</strong><small>Add or update a login password</small></span><span class="settings-v2-chevron">›</span></button>
-                    <div id="settings-payment-method" class="settings-v2-row settings-v2-row-static"><span class="settings-v2-icon">💳</span><span class="settings-v2-copy"><strong>Payments &amp; subscription</strong><small>Managed where you paid for Balance</small></span><button id="settings-payment-method-btn" class="settings-v2-pill" type="button" onclick="openBillingPortal()">Manage</button></div>
+                    <div id="settings-payment-method" class="settings-v2-row settings-v2-row-static"><span class="settings-v2-icon">💳</span><span class="settings-v2-copy"><strong>Payments &amp; subscription</strong><small>See plans, payments and cancellation options</small></span><button id="settings-payment-method-btn" class="settings-v2-pill" type="button" onclick="openMembershipSettings()">Manage</button></div>
                     <button id="settings-cancel-subscription" class="settings-v2-row" type="button" onclick="openCancellationSettings()"><span class="settings-v2-icon">○</span><span class="settings-v2-copy"><strong>Cancel subscription</strong><small>View your end date and stop renewal</small></span><span class="settings-v2-chevron">›</span></button>
                     <div id="settings-app-suggestions" class="settings-v2-suggestion">
                         <button class="settings-v2-row" type="button" onclick="toggleAppSuggestionBox()"><span class="settings-v2-icon">💬</span><span class="settings-v2-copy"><strong>Suggestions &amp; support</strong><small>Send ideas or fixes straight to Shannon</small></span><span class="settings-v2-open"><span id="app-suggestion-toggle-label">Open</span><span id="app-suggestion-toggle-icon">›</span></span></button>
@@ -13007,7 +13008,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261101-course-lock-v3&cohort_diets=1&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261101-self-setup-v5&cohort_diets=1&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13049,7 +13050,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261101-course-lock-v3&cohort_diets=1&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261101-self-setup-v5&cohort_diets=1&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13068,7 +13069,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261101-course-lock-v3"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261101-self-setup-v5"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=18-workout-messages"></script>
@@ -14179,7 +14180,7 @@ if(!window._pbbIsIOSSafari) {
   }
 
   const steps = [
-    {tab:'dashboard',sel:'#next-obvious-steps-card',title:'Explore at your own pace',body:'Use Exit tour at any point to return to Balance. The tour only appears during first-time onboarding. This tour shows the app without entering lessons or changing course progress.'},
+    {tab:'dashboard',sel:'#next-obvious-steps-card',title:'Your welcome is in Inbox',body:'Finish your setup, then open Inbox for your welcome and check-ins from Shannon. Tap Hear from your coach in To Do Next to open the same conversation.'},
     { tab:'movement-tab',sel:'#today-workout-card',condition:()=>window.BalanceFreeStarter?.standardText?.()===true,title:'Your plan and weekly text review',body:'Your membership includes a meal plan, weekly programme updates and a weekly text check-in with Shannon. Finish your setup so Shannon can review it. Voice check-ins and live sessions are separate.' },
     { tab:'profile', sel:'#settings-coaching-support', condition:()=>window.BalanceCoachingSupport?.isEligible()===true, title:'Support that suits you', body:'Choose optional morning messages on saved training days, after-session check-ins, and a gentle or firmer tone. Both switches start off. Weekly check-ins remain; change your choices anytime.' },
     {tab:'home',sel:'.header-msg-icon',title:'Your check-in, with a clear next step',body:'When Shannon attaches a weekly progress card to your check-in, open View progress beneath his text or voice note. See that week’s recorded sets and your reviewed next targets inside Balance.'},
@@ -14355,7 +14356,7 @@ if(!window._pbbIsIOSSafari) {
   // Keeping the order here prevents the shorter legacy activation route from
   // ending at Feed before the coach, Foundations lesson, and Weekly Goals.
   const REQUIRED_ONBOARDING_TOUR_TITLES = [
-    'Explore at your own pace',
+    'Your welcome is in Inbox',
     'Your app tour starts here',
     'See every meal on Day 1',
     'One shopping list for the week',
@@ -16309,7 +16310,8 @@ window.endFeatureTour = function(skipped){
 
   window.startFeatureTour = function(force, options){
     options = options || {};
-    if (window.isAdminViewing || (window.BalanceOnboardingProgress?.isTourSuppressed() && options.settingsReplay !== true)) return false;
+    if (!options.fitgotchiCourse) return false; // Retired app tour; separate paid-course guidance is unchanged.
+    if (window.isAdminViewing || (!options.fitgotchiCourse && window.BalanceOnboardingProgress?.isTourSuppressed() && options.settingsReplay !== true)) return false;
     const savedTour = options.resume === true ? window.BalanceOnboardingProgress?.read()?.tour : null;
     workoutBrowseCheckpoint = savedTour?.workout || null;
     if (window.__balanceGuidedTourActive === true && options.restart !== true) return true;
@@ -17340,7 +17342,7 @@ window.endFeatureTour = function(skipped){
   // First-run onboarding now uses the guided walkthrough only. Keep legacy
   // feature-drop entries dormant so users do not see duplicate spotlight cards.
   allFeatures = [];
-  allFeatures.push({id:'app-tour-exit-course-free-20261101',tab:'dashboard',sel:'#next-obvious-steps-card',title:'Explore at your own pace',body:'Use Exit tour at any point to return to Balance. The tour only appears during first-time onboarding. This tour shows the app without entering lessons or changing course progress.'});
+  allFeatures.push({id:'setup-inbox-welcome-20261101',condition:function(){return !!window.BalanceFreeStarter?.selfSetup?.();},tab:'dashboard',sel:'#next-obvious-steps-card',title:'Your welcome is in Inbox',body:'Finish your setup, then open Inbox for your welcome and check-ins from Shannon. Tap Hear from your coach in To Do Next to open the same conversation.'});
   allFeatures.push({id:'courses-separate-access-20261101',tab:'dashboard',sel:'#next-obvious-steps-card',condition:()=>window.BalanceCourseAccess?.ready()&&window.BalanceCourseAccess.locked(),title:'Courses are separate',body:'Your app and coaching access do not unlock the course library. All courses stay locked during your free coaching month.'});
   allFeatures.push({ id:'standard-text-membership-20261101-v1',tab:'movement-tab',sel:'#today-workout-card',condition:()=>window.BalanceFreeStarter?.standardText?.()===true,title:'Your plan and weekly text review',body:'Your membership includes a meal plan, weekly programme updates and a weekly text check-in with Shannon. Finish your setup so Shannon can review it. Voice check-ins and live sessions are separate.' });
   allFeatures.push({ id:'master-external-videos-20261008', tab:'learning', sel:'#learning-content', title:'Send Master videos through your usual chat', body:'In Master Week 2, send your squat, hinge, push and pull clips to Shannon on Instagram or your usual messaging platform. Record where and when you sent each clip, then save it in the course.' });
@@ -19170,7 +19172,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=135-calendar-safe-area">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=20261101-level-toggle-135-calendar-safe-area">
 <link rel="stylesheet" href="css/dashboard/pbb-quiz-theme.css?v=5-shared-player">
 <link rel="stylesheet" href="css/dashboard/pbb-weighin-theme.css?v=1-balance-gold">
 <link rel="stylesheet" href="css/dashboard/pbb-meal-plan.css?v=20260918-compact-3-six-weeks">
@@ -19209,13 +19211,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=20261024-progress-1';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=20261101-settings-inbox-v2';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=20261024-progress-1"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=20261101-settings-inbox-v2"><\/script>');
 }
 </script>
 
@@ -21845,7 +21847,7 @@ if(!window._pbbIsIOSSafari) {
 </style>
 
 <script src="js/dashboard/pbb-deferred-pickers.js?diet_library=3&v=5-preserve-saved-allergies"></script>
-<script src="js/dashboard/pbb-settings-navigation.js?v=2-your-checkin"></script>
+<script src="js/dashboard/pbb-settings-navigation.js?v=3-membership-home"></script>
 
 
 <!-- Health Connect Prompt Modal -->

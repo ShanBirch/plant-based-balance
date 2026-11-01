@@ -622,6 +622,9 @@
     switchTab('dashboard');
     afterTab(function(){
       try {
+        if(window.BalanceInboxWelcome){
+          Promise.resolve(window.BalanceInboxWelcome.open()).then(opened=>{if(opened)markOnboardingStepSeen('coach_message_intro');});return;
+        }
         if (window.BalanceFreeStarter?.coached?.() && typeof window.openCoachChatModal === 'function') {
           Promise.resolve(window.openCoachChatModal()).then(function(){
             if (document.getElementById('direct-message-modal')?.style.display === 'flex') markOnboardingStepSeen('coach_message_intro');
