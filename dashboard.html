@@ -16433,7 +16433,7 @@ window.endFeatureTour = function(skipped){
 
   window.replayFeatureTour = function(){
     try { localStorage.removeItem('featureTourComplete'); } catch(e){}
-    startFeatureTour('full', { settingsReplay:true });
+    startFeatureTour('full', { settingsReplay:true, restart:true, clientActivation:!!(window.BalanceFreeStarter?.coached?.() || window.BalanceFreeStarter?.standardText?.()) });
   };
 
   function clearWalkthroughTourStorage(){
