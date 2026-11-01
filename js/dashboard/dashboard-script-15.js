@@ -2041,7 +2041,7 @@
         if (descEl) {
             descEl.textContent = rare.unlockLevel
                 ? `${tierData.label} • Level ${rare.unlockLevel} reward • ${rare.desc}`
-                : `${tierData.label} • ${rare.desc} • ${tierData.buyIn.toLocaleString()} Coins`;
+                : `${tierData.label} • ${rare.desc} • Free challenge`;
         }
         let unlocked = false;
         try { unlocked = JSON.parse(localStorage.getItem('user_rares_unlocked') || '[]').includes(id); } catch(e) {}

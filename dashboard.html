@@ -533,7 +533,7 @@ if (window._pbbIsIOSSafari) {
             'lib/native-iap.js',
             'lib/stories.js?v=six-weeks-v2',
             'lib/ai-opponents.js',
-            'lib/games.js?v=3',
+            'lib/games.js?v=20261101-free-3',
             'lib/nutrition-calculator.js',
             'lib/weekly-meal-evolution.js?v=1',
             'data/vegan-challenge-meal-plan.js',
@@ -559,7 +559,7 @@ if (window._pbbIsIOSSafari) {
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
     document.write('<script src="lib/stories.js?v=six-weeks-v2"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
-    document.write('<script src="lib/games.js?v=3"><\/script>');
+    document.write('<script src="lib/games.js?v=20261101-free-3"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
     document.write('<script src="lib/weekly-meal-evolution.js?v=1"><\/script>');
     document.write('<script src="data/vegan-challenge-meal-plan.js"><\/script>');
@@ -1039,11 +1039,7 @@ window.addEventListener('load', function() {
                 <span style="font-size: 0.85rem;">🔥</span>
                 <span id="tamagotchi-streak" class="streak-header-count">0</span>
             </div>
-            <div id="home-coin-header-widget" class="coin-header-widget" onclick="openCoinShop()">
-                <span class="coin-emoji">🪙</span>
-                <span class="coin-amount coin-balance-sync">0</span>
-                <button class="coin-buy-btn" onclick="event.stopPropagation(); openCoinShop()">+</button>
-            </div>
+
             <div class="header-msg-icon" onclick="openFeedMessagesPanel()" style="width: 36px; height: 36px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;">
                 <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--text-muted);"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
                 <div class="header-msg-badge" style="display: none; position: absolute; top: -2px; right: -2px; width: 18px; height: 18px; background: #ef4444; color: white; font-size: 0.65rem; font-weight: 700; border-radius: 50%; align-items: center; justify-content: center;"></div>
@@ -10977,7 +10973,7 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
                 </div>
 
                 <!-- Wager Amount Picker -->
-                <div id="challenge-wager-section" style="margin-bottom: 16px;">
+                <div id="challenge-wager-section" hidden style="margin-bottom: 16px;">
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
                         <span style="font-size: 0.75rem; color: rgba(255,255,255,0.6); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Prize Pool</span>
                         <span style="font-size: 0.7rem; color: rgba(255,255,255,0.4);">Balance: 🪙 <span class="coin-balance-sync">0</span></span>
@@ -19211,13 +19207,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=20261101-settings-inbox-v2';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=20261101-free-games-levels-v3';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=20261101-settings-inbox-v2"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=20261101-free-games-levels-v3"><\/script>');
 }
 </script>
 
@@ -21490,13 +21486,13 @@ if(!window._pbbIsIOSSafari) {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-14-stat_system_save_load_display.js?v=3-no-character-battles';
+                s.src = 'js/dashboard/dashboard-script-14-stat_system_save_load_display.js?v=20261101-free-3-no-character-battles';
                 s.onload = function() { if(window._crumb)window._crumb('script14_deferred_loaded'); };
                 document.head.appendChild(s);
             }, 3500);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-14-stat_system_save_load_display.js?v=3-no-character-battles"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-14-stat_system_save_load_display.js?v=20261101-free-3-no-character-battles"><\/script>');
     }
     </script>
 
@@ -21506,12 +21502,12 @@ if(!window._pbbIsIOSSafari) {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-15.js?v=10-startup-colour-policy';
+                s.src = 'js/dashboard/dashboard-script-15.js?v=20261101-free-challenges-10-startup-colour-policy';
                 document.head.appendChild(s);
             }, 3500);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-15.js?v=10-startup-colour-policy"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-15.js?v=20261101-free-challenges-10-startup-colour-policy"><\/script>');
     }
     </script>
 
@@ -21535,12 +21531,12 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-16-chat_state.js?v=58';
+            s.src = 'js/dashboard/dashboard-script-16-chat_state.js?v=20261101-free-challenges-58';
             document.head.appendChild(s);
         }, 4000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-16-chat_state.js?v=58"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-16-chat_state.js?v=20261101-free-challenges-58"><\/script>');
 }
 </script>
 

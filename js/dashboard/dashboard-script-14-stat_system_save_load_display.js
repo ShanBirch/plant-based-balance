@@ -804,7 +804,7 @@
 
         window._sendBattleInvite = async function(friendId, friendName) {
             if (!FITGOTCHI_BATTLES_ENABLED) return false;
-            const betAmount = window._currentBattleBet || 0;
+            const betAmount = 0;
 
             // Debit coins for the bet before starting
             if (betAmount > 0 && window.supabaseClient && window.currentUser) {

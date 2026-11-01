@@ -4458,7 +4458,7 @@ async function loadHomeChallenges() {
         // Show pending invites first
         if (pendingInvites.length > 0) {
             html += pendingInvites.map(challenge => {
-                const entryFee = challenge.entry_fee || 1000;
+                const entryFee = 0;
                 const rareId = challenge.rare_reward_id;
                 const rare = rareId && typeof RARE_COLLECTION !== 'undefined' ? RARE_COLLECTION.find(r => r.id === rareId) : null;
                 const tierData = rare ? (RARE_TIERS[rare.tier] || RARE_TIERS.COMMON) : null;
@@ -4479,13 +4479,13 @@ async function loadHomeChallenges() {
                                     from ${challenge.creator_name} · 👥 ${challenge.participant_count} joined
                                 </div>
                                 <div style="font-size: 0.72rem; color: rgba(255,255,255,0.85); font-weight: 600; margin-top: 3px;">
-                                    🪙 ${entryFee.toLocaleString()} entry · 2x XP · ${rare ? rare.emoji + ' Win ' + rare.name : 'Win rare drops'}
+                                    Free entry · 2x XP · ${rare ? rare.emoji + ' Win ' + rare.name : 'Win rare drops'}
                                 </div>
                                 ${tierData ? `<span style="display: inline-block; margin-top: 3px; padding: 1px 6px; border-radius: 3px; font-size: 0.55rem; font-weight: 800; background: ${tierData.gradient}; color: white;">${tierData.label}</span>` : ''}
                             </div>
                         </div>
                         <div style="display: flex; gap: 8px;">
-                            <button onclick="acceptChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: rgba(255,255,255,0.95); color: #7c3aed; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 0.85rem;">🪙 Join (${entryFee.toLocaleString()})</button>
+                            <button onclick="acceptChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: rgba(255,255,255,0.95); color: #7c3aed; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 0.85rem;">Join for free</button>
                             <button onclick="declineChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">Decline</button>
                         </div>
                     </div>
@@ -5700,10 +5700,10 @@ function openCreateChallengeModal(featuredRareId = null) {
             if (randomDropInfo) randomDropInfo.style.display = 'none';
             // Lock wager to tier buy-in
             if (wagerSection) wagerSection.style.display = 'none';
-            createChallengeBetAmount = tierData.buyIn;
+            createChallengeBetAmount = 0;
             // Update fee display
             const feeDisplay = document.getElementById('create-challenge-fee-display');
-            if (feeDisplay) feeDisplay.textContent = tierData.buyIn.toLocaleString() + ' Coins entry fee';
+            if (feeDisplay) feeDisplay.textContent = 'Free to enter';
             // Update header
             if (headerTitle) {
                 headerTitle.innerHTML = `${rare.emoji} Featured Rare Challenge`;
@@ -5721,7 +5721,7 @@ function openCreateChallengeModal(featuredRareId = null) {
         const typeInfo = CHALLENGE_TYPES[selectedChallengeType] || CHALLENGE_TYPES.xp;
         if (rarePreview) rarePreview.style.display = 'none';
         if (randomDropInfo) randomDropInfo.style.display = 'block';
-        if (wagerSection) wagerSection.style.display = 'block';
+        if (wagerSection) wagerSection.style.display = 'none';
         // Reset wager presets for this challenge type (quiz gets smaller bets, wellness gets larger)
         _updateCreateChallengeBetPresets(selectedChallengeType);
         // Update "How It Works" steps based on challenge type
@@ -5816,8 +5816,8 @@ function updateSelectedCount() {
 }
 
 // Wellness challenges min: 2,500 (≈$25). Quiz/game challenges min: 1,000.
-const CHALLENGE_MIN_BET_WELLNESS = 2500;
-const CHALLENGE_MIN_BET_QUIZ = 1000;
+const CHALLENGE_MIN_BET_WELLNESS = 0;
+const CHALLENGE_MIN_BET_QUIZ = 0;
 const CHALLENGE_MIN_BET = CHALLENGE_MIN_BET_WELLNESS; // default
 
 // Create challenge bet amount (for the create modal)
@@ -5848,9 +5848,9 @@ function _updateCreateChallengeBetPresets(type) {
         }
     });
 
-    createChallengeBetAmount = minBet;
+    createChallengeBetAmount = 0;
     const feeDisplay = document.getElementById('create-challenge-fee-display');
-    if (feeDisplay) feeDisplay.textContent = minBet.toLocaleString() + ' Coins entry fee';
+    if (feeDisplay) feeDisplay.textContent = 'Free to enter';
     const customInput = document.getElementById('create-challenge-custom-bet');
     if (customInput) customInput.min = minBet;
 }
@@ -5860,7 +5860,7 @@ window._setCreateChallengeBet = function(amount, btnEl) {
     if (amount < minBet && amount !== 0) {
         amount = minBet;
     }
-    createChallengeBetAmount = Math.max(amount, minBet);
+    createChallengeBetAmount = 0;
 
     // Update active button styling (dark theme)
     if (btnEl) {
@@ -5936,7 +5936,7 @@ async function createChallenge() {
     }
 
     try {
-        const betAmount = createChallengeBetAmount;
+        const betAmount = 0;
         const challengeType = document.getElementById('challenge-type-input')?.value || selectedChallengeType || 'xp';
         
         // Calculate end date
@@ -6077,19 +6077,19 @@ async function acceptChallengeInvite(challengeId) {
             .single();
 
         if (challenge) {
-            window._pendingChallengeEntryFee = challenge.entry_fee || 1000;
+            window._pendingChallengeEntryFee = 0;
             window._pendingChallengeRareId = challenge.rare_reward_id || null;
             window._pendingChallengeName = challenge.name || 'Challenge';
             window._pendingChallengeType = challenge.challenge_type || 'xp';
         } else {
-            window._pendingChallengeEntryFee = 1000;
+            window._pendingChallengeEntryFee = 0;
             window._pendingChallengeRareId = null;
             window._pendingChallengeName = 'Challenge';
             window._pendingChallengeType = 'xp';
         }
     } catch (e) {
         console.warn('Could not fetch challenge details:', e);
-        window._pendingChallengeEntryFee = 1000;
+        window._pendingChallengeEntryFee = 0;
         window._pendingChallengeRareId = null;
         window._pendingChallengeName = 'Challenge';
         window._pendingChallengeType = 'xp';
@@ -6171,13 +6171,13 @@ function showChallengePassModal(lockedEntryFee, rareRewardId) {
     const modal = document.getElementById('challenge-pass-modal');
     if (!modal) return;
 
-    const entryFee = lockedEntryFee || 1000;
+    const entryFee = 0;
     currentChallengeBet = entryFee;
 
     const joinBtn = document.getElementById('buy-challenge-pass-btn');
     if (joinBtn) {
         joinBtn.disabled = false;
-        joinBtn.innerHTML = 'Spend 🪙 ' + entryFee.toLocaleString() + ' Coins &amp; Join';
+        joinBtn.textContent = 'Join challenge for free';
     }
 
     // Hide the wager picker entirely — accepter must match creator's entry fee
@@ -6189,7 +6189,7 @@ function showChallengePassModal(lockedEntryFee, rareRewardId) {
     // Show the locked entry fee info
     const feeInfo = document.getElementById('challenge-pass-fee-info');
     if (feeInfo) {
-        feeInfo.textContent = '🪙 ' + entryFee.toLocaleString() + ' Coins entry fee';
+        feeInfo.textContent = 'Free to join. No coins or payment needed.';
     }
 
     // Show rare reward info if available
@@ -6238,7 +6238,7 @@ window._setChallengeBet = function(amount, btnEl) {
     if (amount < CHALLENGE_MIN_BET && amount !== 0) {
         amount = CHALLENGE_MIN_BET;
     }
-    currentChallengeBet = Math.max(amount, CHALLENGE_MIN_BET);
+    currentChallengeBet = 0;
 
     // Update active button styling
     if (btnEl) {
@@ -6259,7 +6259,7 @@ window._setChallengeBet = function(amount, btnEl) {
     // Update join button text
     const joinBtn = document.getElementById('buy-challenge-pass-btn');
     if (joinBtn) {
-        joinBtn.innerHTML = 'Spend 🪙 ' + currentChallengeBet.toLocaleString() + ' Coins &amp; Join';
+        joinBtn.textContent = 'Join challenge for free';
     }
 };
 
@@ -6272,7 +6272,7 @@ async function spendCoinsToJoinChallenge() {
         return;
     }
 
-    const betAmount = currentChallengeBet;
+    const betAmount = 0;
     console.log('⚔️ [spendCoinsToJoinChallenge] Joining:', challengeId, 'Bet:', betAmount);
 
     const btn = document.getElementById('buy-challenge-pass-btn');
@@ -6328,7 +6328,7 @@ async function spendCoinsToJoinChallenge() {
                 }
                 if (btn) {
                     btn.disabled = false;
-                    btn.innerHTML = 'Spend 🪙 ' + betAmount.toLocaleString() + ' Coins &amp; Join';
+                    btn.textContent = 'Join challenge for free';
                 }
             }
             return;
@@ -6370,7 +6370,7 @@ async function spendCoinsToJoinChallenge() {
         }
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = 'Spend 🪙 ' + betAmount.toLocaleString() + ' Coins &amp; Join';
+            btn.textContent = 'Join challenge for free';
         }
     }
 }
@@ -9927,90 +9927,11 @@ async function loadFeedLevelLeaderboard(force = false) {
     list.innerHTML = '<div class="feed-level-leaderboard-state">Loading levels...</div>';
 
     try {
-        const recordsById = new Map();
-        const friendProfiles = new Map();
-        const currentProfile = getFeedLevelCurrentUserProfile();
-
-        try {
-            const { data, error } = await window.supabaseClient
-                .from('user_points')
-                .select('user_id, lifetime_points')
-                .order('lifetime_points', { ascending: false })
-                .limit(FEED_LEVEL_LEADERBOARD_LIMIT);
-            if (error) throw error;
-            (data || []).forEach(row => addFeedLevelRecord(recordsById, row));
-        } catch (e) {
-            console.warn('Could not load global level leaderboard:', e);
-        }
-
-        let friends = [];
-        try {
-            friends = await db.friends.getFriendsWithFallback(window.currentUser.id);
-            (friends || []).forEach(friend => {
-                if (!friend?.friend_id) return;
-                friendProfiles.set(friend.friend_id, {
-                    id: friend.friend_id,
-                    name: friend.friend_name || 'Friend',
-                    photo: friend.friend_photo || ''
-                });
-            });
-        } catch (e) {
-            console.warn('Could not load friend profiles for level leaderboard:', e);
-        }
-
-        const candidateIds = [window.currentUser.id]
-            .concat((friends || []).map(friend => friend.friend_id).filter(Boolean));
-        const uniqueCandidateIds = Array.from(new Set(candidateIds));
-
-        if (uniqueCandidateIds.length) {
-            try {
-                const { data, error } = await window.supabaseClient
-                    .from('user_points')
-                    .select('user_id, lifetime_points')
-                    .in('user_id', uniqueCandidateIds);
-                if (error) throw error;
-                (data || []).forEach(row => addFeedLevelRecord(recordsById, row));
-            } catch (e) {
-                console.warn('Could not load friend level rows:', e);
-            }
-        }
-
-        if (!recordsById.has(window.currentUser.id) && window.db?.points?.getPoints) {
-            try {
-                const ownPoints = await window.db.points.getPoints(window.currentUser.id);
-                addFeedLevelRecord(recordsById, {
-                    user_id: window.currentUser.id,
-                    lifetime_points: ownPoints?.lifetime_points || 0
-                });
-            } catch (e) {
-                console.warn('Could not load current user level row:', e);
-            }
-        }
-
-        const ids = Array.from(recordsById.keys());
-        const profilesById = new Map();
-        if (currentProfile.id) profilesById.set(currentProfile.id, currentProfile);
-        friendProfiles.forEach((profile, id) => profilesById.set(id, profile));
-
-        if (ids.length) {
-            try {
-                const { data, error } = await window.supabaseClient
-                    .from('users')
-                    .select('id, name, email, profile_photo')
-                    .in('id', ids);
-                if (error) throw error;
-                (data || []).forEach(user => {
-                    profilesById.set(user.id, {
-                        id: user.id,
-                        name: user.name || user.email?.split('@')[0] || 'Member',
-                        photo: user.profile_photo || ''
-                    });
-                });
-            } catch (e) {
-                console.warn('Could not load level leaderboard profile names:', e);
-            }
-        }
-
+        const {data:globalRows,error:globalError}=await window.supabaseClient.rpc('my_balance_level_leaderboard');
+        if(globalError)throw globalError;
+        const recordsById=new Map(),profilesById=new Map();
+        (globalRows||[]).forEach(row=>{addFeedLevelRecord(recordsById,row);profilesById.set(row.user_id,{id:row.user_id,name:row.name||'Balance member',photo:row.profile_photo||''});});
+        const ids=Array.from(recordsById.keys());
         const ranked = ids.map((id, index) => {
             const record = recordsById.get(id);
             const profile = profilesById.get(id) || { id, name: `Member ${index + 1}`, photo: '' };
@@ -10040,7 +9961,7 @@ async function loadFeedLevelLeaderboard(force = false) {
 
         const topEntry = ranked[0];
         if (topValue) topValue.textContent = `Lv ${topEntry.level}`;
-        if (summary) summary.textContent = `${ranked.length} ranked so far`;
+        if (summary) summary.textContent = `Top ${ranked.length} across all Balance members`;
 
         list.innerHTML = ranked.map((entry, index) => {
             const rank = index + 1;

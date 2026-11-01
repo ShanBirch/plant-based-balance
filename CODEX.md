@@ -18,6 +18,10 @@ After completed setup, create one fixed welcome from Shannon in the actual nudge
 
 Settings membership management opens membership.html with current offers, direct card management and cancellation choices. Never choose an App Store based on device alone. Returning to Balance from these pages opens Home without marking an unfinished setup complete. Top Levels opens only through explicit state, never focus styling.
 
+## Free community games and global ranks, 1 November 2026
+
+Shannon requested global top 10 levels, no header FitCoins balance, and free in-app games/challenges. Top Levels uses authenticated my_balance_level_leaderboard(): top ten across real members, only display name/photo/XP, no friend-only fallback or email exposure. All new game/quiz/character matches and in-app challenges force entry/wager zero on the server; cached game_bet, battle_bet and challenge_entry debit calls are no-ops. Existing balances, historical transactions/results and unrelated coin uses remain intact. This does not change coaching prices or paid course entitlements. Monthly raffle stays disabled. See migration 20261101020000_free_games_global_levels.sql.
+
 ## App diagnostics (26 October 2026)
 
 For app problems, read `docs/startup-error-debugging.md` and query current
@@ -657,7 +661,7 @@ Shannon wants data collected on every meaningful growth, sales, onboarding, and 
 - No new ad, landing-page variant, checkout path, onboarding change, or automated DM flow is considered ready until its measurement path has been verified.
 
 ### Video-only new-client welcome (18 September 2026)
-Shannon requested the onboarding coach video as the welcome, without a separate automated Coach Shannon text DM. Both onboarding-welcome-draft and the legacy send-welcome-message endpoint must not send or queue welcome texts. Keep signup context seeding and normal coach conversations. Historical draft helpers exist only for compatibility tests; do not reconnect them to delivery.
+Historical welcome direction, superseded for new November members by the setup/Inbox correction at the top of this file: Shannon requested the onboarding coach video as the welcome, without a separate automated Coach Shannon text DM. Both onboarding-welcome-draft and the legacy send-welcome-message endpoint must not send or queue welcome texts. Keep signup context seeding and normal coach conversations. Historical draft helpers exist only for compatibility tests; do not reconnect them to delivery.
 
 
 ## First-login ending, 29 September 2026

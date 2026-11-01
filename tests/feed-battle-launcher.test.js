@@ -16,9 +16,9 @@ const gamesSource = fs.readFileSync(
     'id="feed-start-battle-button"',
     'Start Battle',
     'Quiz, chess, checkers, and more',
-    'window.openFeedBattleChooser ? window.openFeedBattleChooser()',
+    "openSettingsDestination('battle')",
     'var learningAlreadyRequested = Array.prototype.some.call(document.scripts || []',
-    'lib/games.js?v=3'
+    'lib/games.js?v=20261101-free-3'
 ].forEach(expected => {
     assert.ok(dashboardSource.includes(expected), `dashboard should include ${expected}`);
 });
@@ -47,7 +47,7 @@ assert.ok(settingsView.includes('id="feed-start-battle-card"'), 'battle launcher
     "type: 'quiz'",
     'window.showQuizBattleInviteModal',
     'requestQuizBattleScriptIfNeeded();',
-    "script.src = 'lib/learning-inline.js?v=10';",
+    "script.src = 'lib/learning-inline.js?v=46-four-part-path';",
     'window.openGameChallengeModal({ preselectGameType: battleType })',
     'async function openGameChallengeModal(options = {})',
     "const preselectGameType = typeof options === 'string' ? options : options?.preselectGameType;",

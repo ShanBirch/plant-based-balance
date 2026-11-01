@@ -1113,7 +1113,7 @@
                         if (!validTypes.includes(challengeType)) {
                             throw new Error('Invalid challenge type: ' + challengeType + '. Must be one of: ' + validTypes.join(', '));
                         }
-                        const entryFee = Math.max(0, parseInt(action.entry_fee) || 0);
+                        const entryFee = 0;
                         const durationDays = parseInt(action.duration_days) || 30;
 
                         // Debit coins if entry fee > 0
