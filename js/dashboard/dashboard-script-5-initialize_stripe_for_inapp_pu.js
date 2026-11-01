@@ -1338,10 +1338,6 @@ function setOnboardingNavigationGate(locked) {
 
 // Real switchAppTab implementation - replaces the early stub
 function _switchAppTabReal(tabName, btn) {
-    if (tabName === 'learning' && (window.BalanceFreeStarter?.coached?.() || window.BalanceFreeStarter?.standardText?.())) {
-        window.showToast?.('Your free coaching month includes Inbox, workouts and meal planning. The course is separate.', 'info');
-        return false;
-    }
     document.getElementById('view-dashboard')?.classList.toggle('coach-assigned-active',!!window.BalanceOnboardingProgress?.isCoachPreparedMember());
     // First-run setup is a required guided gate. Keep this check at the shared
     // navigation boundary as a safety net even when another feature tries to

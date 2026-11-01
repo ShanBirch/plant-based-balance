@@ -207,9 +207,10 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 <!-- CRITICAL: Admin view-as localStorage isolation — runs BEFORE any other localStorage reads -->
 <script src="js/dashboard/script_part_1.js"></script>
 <!-- Paid-Facebook preview attribution must be available before auth-guard decides guest vs member mode. -->
-<script src="lib/onboarding-progress.js?v=11-coached-month"></script>
-<script src="lib/free-starter.js?v=13-standard-text-membership"></script>
-<script src="lib/meta-ad-trial.js?v=35-free-starter"></script>
+<script src="lib/onboarding-progress.js?v=12-tour-exit"></script>
+<script defer src="js/dashboard/pbb-course-access.js?v=20261101-v1"></script>
+<script src="lib/free-starter.js?v=14-course-lock"></script>
+<script src="lib/meta-ad-trial.js?v=36-course-free-tour"></script>
 
 <!-- CRITICAL: Hide loading overlay for returning users and restore cached FitGotchi state -->
 <script>
@@ -13010,7 +13011,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261101-standard-text-v2&cohort_diets=1&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261101-course-lock-v3&cohort_diets=1&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13052,7 +13053,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261101-standard-text-v2&cohort_diets=1&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261101-course-lock-v3&cohort_diets=1&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13071,7 +13072,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261101-standard-text-v2"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261101-course-lock-v3"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=18-workout-messages"></script>
@@ -13941,7 +13942,7 @@ if(!window._pbbIsIOSSafari) {
       <ul class="meta-tour-welcome-list">
         <li><span><strong>Your plan:</strong> meal plan, shopping list, nutrition tracker and every workout.</span></li>
         <li><span><strong>Your community:</strong> meet the group and introduce yourself.</span></li>
-        <li><span><strong>Your course:</strong> complete your first Balance Learn lesson and quiz.</span></li>
+
         <li><span><strong>Your support:</strong> hear how Shannon will help adjust your week.</span></li>
         <li><span><strong>Your week:</strong> choose the goals you want Shannon to review.</span></li>
       </ul>
@@ -13970,6 +13971,8 @@ if(!window._pbbIsIOSSafari) {
     </div>
   </div>
 </div>
+<button id="app-tour-exit" type="button" onclick="exitAppTour()">Exit tour</button>
+<style>#app-tour-exit{display:none;position:fixed;right:18px;top:max(48px,calc(12px + var(--safe-area-top,env(safe-area-inset-top,0px))));z-index:2147483000;pointer-events:auto;min-height:42px;padding:10px 16px;border:1px solid #b8892b;border-radius:24px;background:#fffaf0;color:#243c30;-webkit-text-fill-color:#243c30;font:700 14px system-ui;cursor:pointer}body:has(#guided-tour-overlay.active) #app-tour-exit{display:block}</style>
 </script><!-- end tmpl-onboarding -->
 <script>
 (function(){
@@ -14180,6 +14183,7 @@ if(!window._pbbIsIOSSafari) {
   }
 
   const steps = [
+    {tab:'dashboard',sel:'#next-obvious-steps-card',title:'Explore at your own pace',body:'Use Exit tour at any point to return to Balance. You can replay the app tour later from Settings. This tour shows the app without entering lessons or changing course progress.'},
     { tab:'movement-tab',sel:'#today-workout-card',condition:()=>window.BalanceFreeStarter?.standardText?.()===true,title:'Your plan and weekly text review',body:'Your membership includes a meal plan, weekly programme updates and a weekly text check-in with Shannon. Finish your setup so Shannon can review it. Voice check-ins and live sessions are separate.' },
     { tab:'profile', sel:'#settings-coaching-support', condition:()=>window.BalanceCoachingSupport?.isEligible()===true, title:'Support that suits you', body:'Choose optional morning messages on saved training days, after-session check-ins, and a gentle or firmer tone. Both switches start off. Weekly check-ins remain; change your choices anytime.' },
     {tab:'home',sel:'.header-msg-icon',title:'Your check-in, with a clear next step',body:'When Shannon attaches a weekly progress card to your check-in, open View progress beneath his text or voice note. See that week’s recorded sets and your reviewed next targets inside Balance.'},
@@ -14229,7 +14233,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'learning', sel:'#balance-foundations-first-week', title:'Why change feels hard', body:'This is your first week. Tap Why change feels hard to see its lessons.', pageView:true, metaPreview:true, preserveSurface:true, requiresHighlightedClick:true, highlightedClickPrompt:'Tap the highlighted week to reveal your first lesson.', highlightedClickComplete:'Your first week is open. Meet the Researchers is next.', nextLabel:'Find Lesson 1' },
     { tab:'learning', sel:'#balance-foundations-first-lesson', fallbackSel:'.course-week-lesson-row', title:'Take your first lesson', body:'Your lessons and weekly actions now live together here. Tap the highlighted first lesson to begin.', pageView:true, metaPreview:true, preserveSurface:true, requiresHighlightedClick:true, highlightedClickPrompt:'Tap the highlighted first lesson to begin.', highlightedClickComplete:'Lesson 1 is open. Tap Next and complete the short lesson and quiz.', nextLabel:'Take the lesson' },
     { tab:'learning', sel:'#story-next-btn,#story-quiz-btn button,.learning-game-stage button,.learning-game-stage .match-item,.learning-game-stage .order-item', fallbackSel:'#learning-content', title:'Read, then take the quiz', body:'Read all four researcher cards, continue to the key insight, then complete the short quiz. This is how Balance Learn teaches you to make change work, one lesson at a time.', pageView:true, interactivePage:true, edgePrompt:true, embeddedGuide:true, metaPreview:true, metaPreviewSignoff:true, requiresFoundationsLesson:'mind-1-1', preserveSurface:true, action:async function(){ var opened = await openMetaPreviewFirstFoundationsLesson(); if(!opened && typeof showToast === 'function') showToast('Your first course lesson is still loading.', 'info'); return !!opened; } },
-    { tab:'dashboard', sel:'#coach-checkin-explainer .coach-checkin-explainer__panel', fallbackSel:'#next-obvious-steps-card', title:'What Shannon checks each week', body:'See how your goals, meals, course, workouts, check-in, progress photos, sleep, steps and recovery help Shannon adjust the next week.', metaPreview:true, checkinExplainerGuide:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="coach_checkin_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: see how check-ins work', preActionBody:'Tap the highlighted check-in card to see exactly what Shannon reviews and what to keep updated during the week.', preActionButton:'Tap the check-in card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('coach_checkin_intro'); await new Promise(function(r){ setTimeout(r,180); }); return !!document.querySelector('#coach-checkin-explainer.is-open .coach-checkin-explainer__panel'); } catch(e){ return false; } } },
+    { tab:'dashboard', sel:'#coach-checkin-explainer .coach-checkin-explainer__panel', fallbackSel:'#next-obvious-steps-card', title:'What Shannon checks each week', body:'See how your goals, meals, workouts, check-in, progress photos, sleep, steps and recovery help Shannon adjust the next week.', metaPreview:true, checkinExplainerGuide:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="coach_checkin_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: see how check-ins work', preActionBody:'Tap the highlighted check-in card to see exactly what Shannon reviews and what to keep updated during the week.', preActionButton:'Tap the check-in card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('coach_checkin_intro'); await new Promise(function(r){ setTimeout(r,180); }); return !!document.querySelector('#coach-checkin-explainer.is-open .coach-checkin-explainer__panel'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#tamagotchi-stats-bar', fallbackSel:'#balance-level-bar', title:'Levels keep going', fallbackTitle:'Levels keep going', body:'Level 99 is no longer the finish line. Keep earning XP to climb higher and unlock a new character every 5 levels.', fallbackBody:'Level 99 is no longer the finish line. Keep earning XP to climb higher and unlock a new character every 5 levels.' },
     { tab:'movement-tab', sel:'#activity-share-section', title:'Share your activity twice', body:'The first activity share each day earns +15 XP in Balance Feed and another +15 XP in Instagram Story. Later activity shares still work without extra XP.', condition: function(){ return !!document.getElementById('activity-share-section'); } },
     { tab:'movement-tab', sel:'#activity-share-photo-btn', title:'Take a photo or choose one', body:'When you share an activity, tap Add a photo to open your camera or choose one from your gallery. Balance puts your activity stats straight on it for Feed.', condition: function(){ return !!document.getElementById('activity-share-photo-btn'); } },
@@ -14355,6 +14359,7 @@ if(!window._pbbIsIOSSafari) {
   // Keeping the order here prevents the shorter legacy activation route from
   // ending at Feed before the coach, Foundations lesson, and Weekly Goals.
   const REQUIRED_ONBOARDING_TOUR_TITLES = [
+    'Explore at your own pace',
     'Your app tour starts here',
     'See every meal on Day 1',
     'One shopping list for the week',
@@ -14474,13 +14479,13 @@ if(!window._pbbIsIOSSafari) {
       {tab:'movement-tab',sel:'#today-workout-card',fallbackSel:'#movement-grid-container',title:'Your prepared workouts',body:'Your program follows the days and times you agreed with Shannon. Open your sessions from the calendar.',metaPreview:true},
       {tab:'dashboard',sel:'#next-obvious-steps-card',title:'Stay in touch through Inbox',body:'Use Open Message on Home to find Shannon in Inbox. You can also open your meal plan from To Do Next.',metaPreview:true}
     ];
-    return REQUIRED_ONBOARDING_TOUR_TITLES.map(findTourStep).filter(Boolean).map(function(step){
+    return REQUIRED_ONBOARDING_TOUR_TITLES.map(findTourStep).filter(step=>step&&step.tab!=='learning').map(function(step){
       if (!window.BalanceFreeStarter?.active()) return step;
       if (step.requiresWeeklyGoals) return Object.assign({},step,{body:'Choose one to three realistic actions for this week, set the targets and save your goals.',preActionBody:'Tap the highlighted Weekly Goals card and choose the realistic actions you want to work towards this week.'});
-      if (step.requiresFeedPost) return Object.assign({},step,{requiresFeedPost:false,title:'Introduce yourself when you are ready',body:'You can post a hello to the community if you want to. You can also continue to your course without posting.',nextLabel:'Continue to my course'});
+      if (step.requiresFeedPost) return Object.assign({},step,{requiresFeedPost:false,title:'Introduce yourself when you are ready',body:'You can post a hello to the community if you want to. You can continue the app tour without posting.',nextLabel:'Continue the app tour'});
       if (window.BalanceFreeStarter.reviewPending() && (step.workoutEducation || step.title === 'Open your first workout')) return null;
       if (window.BalanceFreeStarter.reviewPending() && (step.requiresWorkoutBrowse || /workout program|workout week|Open the program/i.test(step.title))) {
-        return {tab:'movement-tab', sel:'#today-workout-card', fallbackSel:'#movement-grid-container', title:'Your two free workouts', body:'Your two home workouts are awaiting Shannon’s review of your setup and movement restrictions. Keep going with your course. No payment is needed to access your starter.', metaPreview:true};
+        return {tab:'movement-tab', sel:'#today-workout-card', fallbackSel:'#movement-grid-container', title:'Your two free workouts', body:'Your two home workouts are awaiting Shannon’s review of your setup and movement restrictions. Continue exploring your app. No payment is needed to access your starter.', metaPreview:true};
       }
       if (step.checkinExplainerGuide) return {tab:'dashboard',sel:'#next-obvious-steps-card',title:'Your free starter support',body:'Your course and two home workouts are free. Weekly coaching reviews are optional and are not included. Keep following To Do Next to complete your setup.'};
       return step;
@@ -16122,16 +16127,16 @@ if (step && step.requiresFeedPost) {
     if (title) title.textContent = 'Your first week is ready';
     if (clientActivationTour) {
       if (intro) intro.textContent = 'Your setup questions are finished. We will now guide you through the plan Balance has built for you, one clear step at a time.';
-      if (list) list.innerHTML = '<li><span><strong>Your plan:</strong> meal plan, shopping list, nutrition tracker and every workout.</span></li><li><span><strong>Your community:</strong> meet the group and introduce yourself.</span></li><li><span><strong>Your course:</strong> complete your first Balance Learn lesson and quiz.</span></li><li><span><strong>Your support:</strong> hear how Shannon will help adjust your week.</span></li><li><span><strong>Your week:</strong> choose the goals you want Shannon to review.</span></li>';
+      if (list) list.innerHTML = '<li><span><strong>Your plan:</strong> meal plan, shopping list, nutrition tracker and every workout.</span></li><li><span><strong>Your community:</strong> meet the group and introduce yourself.</span></li><li><span><strong>Your support:</strong> hear how Shannon will help adjust your week.</span></li><li><span><strong>Your week:</strong> choose the goals you want Shannon to review.</span></li>';
     } else {
-      if (list) list.innerHTML = '<li><span><strong>Your plan:</strong> meal plan, shopping list, nutrition tracker and every workout.</span></li><li><span><strong>Your community:</strong> meet the group and introduce yourself.</span></li><li><span><strong>Your course:</strong> complete your first Balance Learn lesson and quiz.</span></li><li><span><strong>Your support:</strong> hear how Shannon will help adjust your week.</span></li><li><span><strong>Your week:</strong> choose the goals you want Shannon to review.</span></li>';
+      if (list) list.innerHTML = '<li><span><strong>Your plan:</strong> meal plan, shopping list, nutrition tracker and every workout.</span></li><li><span><strong>Your community:</strong> meet the group and introduce yourself.</span></li><li><span><strong>Your support:</strong> hear how Shannon will help adjust your week.</span></li><li><span><strong>Your week:</strong> choose the goals you want Shannon to review.</span></li>';
       try {
         if (window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.renderPersonalisedSetup === 'function') {
           window.BalanceMetaAdTrial.renderPersonalisedSetup();
         }
       } catch(e) {}
     }
-    if (window.BalanceFreeStarter?.active() && list) list.innerHTML = '<li><span><strong>Your free starter:</strong> two home workouts after setup review, meal tools and the course.</span></li><li><span><strong>Your community:</strong> look around and introduce yourself if you want to.</span></li><li><span><strong>Your course:</strong> complete your first lesson and quiz.</span></li><li><span><strong>Your week:</strong> choose realistic goals. Ongoing coaching is optional.</span></li>';
+    if (window.BalanceFreeStarter?.active() && list) list.innerHTML = '<li><span><strong>Your free starter:</strong> two home workouts after setup review, meal tools and the course.</span></li><li><span><strong>Your community:</strong> look around and introduce yourself if you want to.</span></li><li><span><strong>Your week:</strong> choose realistic goals. Ongoing coaching is optional.</span></li>';
     if(window.BalanceFreeStarter?.standardText?.()) {
       if(intro)intro.textContent='Find your workouts, meals and weekly text check-in. Shannon reviews your setup before confirming your programme.';
       if(list)list.innerHTML='<li><span><strong>Your plan:</strong> workouts and meal planning.</span></li><li><span><strong>Your support:</strong> one weekly text check-in.</span></li><li><span><strong>Your week:</strong> realistic goals and tracking.</span></li>';
@@ -16175,6 +16180,15 @@ if (step && step.requiresFeedPost) {
     });
   }
 
+window.exitAppTour = function(){
+    metaPreviewTour=false;clientActivationTour=false;courseFeatureTour=null;
+    window.__balancePendingClientActivation=false;window.__balanceClientActivationTour=false;
+    window.BalanceOnboardingProgress?.dismissFirstRunTour?.();
+    window.BalanceOnboardingProgress?.clear();
+    window.BalanceMetaPreviewSoundtrack?.stop();
+    window.endFeatureTour(true);
+    if(typeof window.switchAppTab==='function')window.switchAppTab('dashboard');
+};
 window.endFeatureTour = function(skipped){
     const completedCourseFeatureTour = courseFeatureTour;
     if (completedCourseFeatureTour && skipped && tourNavigationBusy) return false;
@@ -16217,14 +16231,6 @@ window.endFeatureTour = function(skipped){
     activeTourDisplayStep = null;
     stopTourRecovery();
     activeTourFallbackTarget = null;
-    if (completedMetaPreviewTour && !skipped && !completedTourGates.has('foundations-lesson:mind-1-1')) {
-      var foundationsStepIndex = activeSteps.findIndex(function(step){ return step && step.metaPreviewSignoff === true; });
-      if (foundationsStepIndex >= 0) {
-        showStep(foundationsStepIndex);
-        return false;
-      }
-      return false;
-    }
     try { window.trackBalanceActivity('guided_tour_completed', { mode: completedClientActivationTour ? 'client_activation' : (completedMetaPreviewTour ? 'meta_preview' : 'standard'), skipped: !!skipped, final_step_number: Number(idx) + 1, step_count: activeSteps.length }, { immediate:true }); } catch(e){}
     trackTourProgress(idx, skipped ? 'skipped' : 'completed');
     if (!skipped && completedClientActivationTour && !completedCourseFeatureTour) {
@@ -16292,7 +16298,7 @@ window.endFeatureTour = function(skipped){
           }
         })(0);
       } else {
-        window.BalanceMetaAdTrial.showCoachWelcome({ member: clientCompletionDestination === 'course' });
+        if(clientCompletionDestination==='home'){window.switchAppTab?.('dashboard');}else window.BalanceMetaAdTrial.showCoachWelcome({ member:false });
       }
     } else if (!skipped) {
       if (!playQueuedWalkthroughLevelUp()) {
@@ -16335,7 +16341,7 @@ window.endFeatureTour = function(skipped){
     window.__balanceClientActivationTour = clientActivationTour;
     window.__balancePendingClientActivation = clientActivationTour;
     activeSteps = courseFeatureTour ? fitgotchiCourseSteps : steps.filter(function(s){
-      if ((window.BalanceFreeStarter?.coached?.() || window.BalanceFreeStarter?.standardText?.()) && s.tab === 'learning') return false;
+      if (s.tab === 'learning') return false;
       if (s.clientActivationOnly && !clientActivationTour) return false;
       return !s.condition || s.condition();
     });
@@ -17341,6 +17347,8 @@ window.endFeatureTour = function(skipped){
   // First-run onboarding now uses the guided walkthrough only. Keep legacy
   // feature-drop entries dormant so users do not see duplicate spotlight cards.
   allFeatures = [];
+  allFeatures.push({id:'app-tour-exit-course-free-20261101',tab:'dashboard',sel:'#next-obvious-steps-card',title:'Explore at your own pace',body:'Use Exit tour at any point to return to Balance. You can replay the app tour later from Settings. This tour shows the app without entering lessons or changing course progress.'});
+  allFeatures.push({id:'courses-separate-access-20261101',tab:'dashboard',sel:'#next-obvious-steps-card',condition:()=>window.BalanceCourseAccess?.ready()&&window.BalanceCourseAccess.locked(),title:'Courses are separate',body:'Your app and coaching access do not unlock the course library. All courses stay locked during your free coaching month.'});
   allFeatures.push({ id:'standard-text-membership-20261101-v1',tab:'movement-tab',sel:'#today-workout-card',condition:()=>window.BalanceFreeStarter?.standardText?.()===true,title:'Your plan and weekly text review',body:'Your membership includes a meal plan, weekly programme updates and a weekly text check-in with Shannon. Finish your setup so Shannon can review it. Voice check-ins and live sessions are separate.' });
   allFeatures.push({ id:'master-external-videos-20261008', tab:'learning', sel:'#learning-content', title:'Send Master videos through your usual chat', body:'In Master Week 2, send your squat, hinge, push and pull clips to Shannon on Instagram or your usual messaging platform. Record where and when you sent each clip, then save it in the course.' });
   allFeatures.push({id:'learn-ten-week-learning-only-20261008',tab:'learning',sel:'#learning-content',title:'Learn at a steadier pace',body:'Balance Learn now has ten weeks, with six lessons in Week 1 and four or five in later weeks. Read the lessons, answer the quizzes and continue at your pace. Practical course tasks are paused, and your completed lessons still count.'});
@@ -21444,11 +21452,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-      s.src = 'lib/learning-inline.js?v=20261026-content-ready';
+      s.src = 'lib/learning-inline.js?v=20261101-course-lock-20261026-content-ready';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-    document.write('<script src="lib/learning-inline.js?v=20261026-content-ready"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=20261101-course-lock-20261026-content-ready"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->
