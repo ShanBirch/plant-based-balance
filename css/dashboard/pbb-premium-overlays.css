@@ -14638,3 +14638,40 @@ html[data-pbb-theme="light"] :is(#view-active-workout, #view-active-workout-stub
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
 }
+
+/* Free community entry surfaces share the app's paired readable theme tokens. */
+html[data-pbb-theme] .free-game-picker[id] {
+ position:fixed !important; inset:0 !important; z-index:900000 !important;
+ box-sizing:border-box !important; overflow:hidden !important;
+ padding:max(42px,env(safe-area-inset-top,0px)) 8px max(16px,env(safe-area-inset-bottom,0px)) !important;
+ align-items:center !important; justify-content:center !important;
+ background:rgba(0,0,0,.65) !important;
+}
+html[data-pbb-theme] .free-game-picker[id] > div {
+ background:var(--pbb-readable-surface,#fffdf8) !important;
+ color:var(--pbb-readable-text,#24271f) !important;
+ -webkit-text-fill-color:var(--pbb-readable-text,#24271f) !important;
+ border:1px solid var(--pbb-readable-border-soft,#d5c9b2) !important;
+ max-height:calc(100dvh - max(42px,env(safe-area-inset-top,0px)) - max(16px,env(safe-area-inset-bottom,0px))) !important;
+ min-height:0 !important; overflow-y:auto !important; overscroll-behavior:contain;
+}
+html[data-pbb-theme] .free-game-picker[id] > div * {
+ color:var(--pbb-readable-text,#24271f) !important;
+ -webkit-text-fill-color:var(--pbb-readable-text,#24271f) !important;
+}
+html[data-pbb-theme] .free-game-picker[id] :is(.game-type-card,.game-friend-card,.game-bet-btn,[onclick^="startGameVsAI"],[onclick*="_startQuizBattleVsAI"],button) {
+ background:var(--pbb-readable-surface-soft,#f2eddf) !important;
+ border-color:var(--pbb-readable-border-soft,#d5c9b2) !important;
+}
+html[data-pbb-theme] .free-game-picker[id] :is(.game-type-card,.game-friend-card).selected {
+ border-color:var(--gold,#af882f) !important; box-shadow:0 0 0 2px var(--gold,#af882f) inset;
+}
+html[data-pbb-theme] .free-game-picker[id] :is(p,small,[style*="font-size:0.6rem"],[style*="font-size: 0.7rem"]) {
+ color:var(--pbb-readable-muted,#575d51) !important;
+ -webkit-text-fill-color:var(--pbb-readable-muted,#575d51) !important;
+}
+html[data-pbb-theme] .free-game-picker[id] :is(#send-game-challenge-btn,#create-challenge-btn,#buy-challenge-pass-btn) {
+ background:#dfbc68 !important; color:#24271f !important; -webkit-text-fill-color:#24271f !important;
+}
+html[data-pbb-theme] .free-game-picker[id] button:focus-visible { outline:3px solid var(--gold,#af882f); outline-offset:2px; }
+body:has(.free-game-picker[id]:not([style*="display: none"]):not([style*="display:none"])) #pwa-install-banner { display:none !important; }

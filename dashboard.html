@@ -533,7 +533,7 @@ if (window._pbbIsIOSSafari) {
             'lib/native-iap.js',
             'lib/stories.js?v=six-weeks-v2',
             'lib/ai-opponents.js',
-            'lib/games.js?v=20261101-free-3',
+            'lib/games.js?v=20261101-free-picker-v2',
             'lib/nutrition-calculator.js',
             'lib/weekly-meal-evolution.js?v=1',
             'data/vegan-challenge-meal-plan.js',
@@ -559,7 +559,7 @@ if (window._pbbIsIOSSafari) {
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
     document.write('<script src="lib/stories.js?v=six-weeks-v2"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
-    document.write('<script src="lib/games.js?v=20261101-free-3"><\/script>');
+    document.write('<script src="lib/games.js?v=20261101-free-picker-v2"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
     document.write('<script src="lib/weekly-meal-evolution.js?v=1"><\/script>');
     document.write('<script src="data/vegan-challenge-meal-plan.js"><\/script>');
@@ -10818,7 +10818,7 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
     </div>
 
     <!-- Challenge Type Picker Modal -->
-    <div id="challenge-type-picker" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10009; align-items: center; justify-content: center; backdrop-filter: blur(6px);">
+    <div id="challenge-type-picker" class="free-game-picker" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10009; align-items: center; justify-content: center; backdrop-filter: blur(6px);">
         <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border-radius: 24px; max-width: 420px; width: 92%; max-height: 85vh; display: flex; flex-direction: column; animation: fadeInScale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(124,58,237,0.15);">
             <!-- Header -->
             <div style="text-align: center; padding: 24px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;">
@@ -10888,7 +10888,7 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
     </div>
 
     <!-- Create Challenge Modal -->
-    <div id="create-challenge-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10009; align-items: center; justify-content: center; backdrop-filter: blur(6px);">
+    <div id="create-challenge-modal" class="free-game-picker" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10009; align-items: center; justify-content: center; backdrop-filter: blur(6px);">
         <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border-radius: 24px; max-width: 420px; width: 92%; max-height: 85vh; display: flex; flex-direction: column; animation: fadeInScale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(59,130,246,0.15);">
             <!-- Header -->
             <div style="text-align: center; padding: 24px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;">
@@ -11400,7 +11400,7 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
     </div>
 
     <!-- Challenge Buy-In Modal (Coins) - Battle Mode Style -->
-    <div id="challenge-pass-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10010; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+    <div id="challenge-pass-modal" class="free-game-picker" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10010; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
         <div class="challenge-buyin-modal">
             <div class="challenge-buyin-header">
                 <h2>🏆 Challenge Mode</h2>
@@ -19166,7 +19166,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=20261101-level-toggle-135-calendar-safe-area">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=20261101-free-picker-theme-v1">
 <link rel="stylesheet" href="css/dashboard/pbb-quiz-theme.css?v=5-shared-player">
 <link rel="stylesheet" href="css/dashboard/pbb-weighin-theme.css?v=1-balance-gold">
 <link rel="stylesheet" href="css/dashboard/pbb-meal-plan.css?v=20260918-compact-3-six-weeks">
@@ -21441,11 +21441,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-      s.src = 'lib/learning-inline.js?v=20261101-free-quiz-course-lock-v2';
+      s.src = 'lib/learning-inline.js?v=20261101-free-quiz-course-lock-v3';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-    document.write('<script src="lib/learning-inline.js?v=20261101-free-quiz-course-lock-v2"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=20261101-free-quiz-course-lock-v3"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->
