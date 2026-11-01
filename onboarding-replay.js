@@ -14,6 +14,10 @@
   // real session or parent DOM. Only reviewed static GET assets cross the bridge.
   window.addEventListener('message',async event=>{
    if(event.source!==frame.contentWindow)return;
+   if(event.data?.type==='balance_preview_complete'){
+    frame.remove();status.hidden=false;status.textContent='Onboarding review complete. Your account has not been changed.';
+    const back=document.createElement('a');back.href='/dashboard.html?review_return=settings';back.textContent='Back to Settings';status.append(document.createElement('br'),back);return;
+   }
    if(event.data?.type==='balance_preview_ready'){frame.style.visibility='visible';status.hidden=true;return;}
    if(event.data?.type==='balance_preview_exit'){location.replace('/dashboard.html?review_return=settings');return;}
    if(event.data?.type!=='balance_preview_asset'||!event.ports[0])return;
@@ -22,8 +26,8 @@
     const result=await fetch(url,{method:'GET',credentials:'omit'});const data=await result.arrayBuffer();port.postMessage({status:result.status,contentType:result.headers.get('content-type'),data},[data]);
    }catch{port.postMessage({status:503,error:'Preview only. This request was not sent.'});}finally{port.close();}
   });
-  const html=await source.text();frame.srcdoc=html.replace(/<head>/i,'<head><base href="'+location.origin+'/"><meta http-equiv="Content-Security-Policy" content="'+csp+'"><script src="/js/dashboard/pbb-onboarding-replay-sandbox.js?v=20261101-v4"></script>');
+  const html=await source.text();frame.srcdoc=html.replace(/<head>/i,'<head><base href="'+location.origin+'/"><meta http-equiv="Content-Security-Policy" content="'+csp+'"><script src="/js/dashboard/pbb-onboarding-replay-sandbox.js?v=20261101-v5"></script>');
   frame.style.visibility='hidden';document.body.append(frame);
-  setTimeout(()=>{if(!status.hidden){status.textContent='Balance is taking longer to open. Reload to try again, or return to Settings.';const back=document.createElement('a');back.href='/dashboard.html?review_return=settings';back.textContent='Back to Settings';status.append(document.createElement('br'),back);}},30000);
+  setTimeout(()=>{if(frame.isConnected&&!status.hidden){status.textContent='Balance is taking longer to open. Reload to try again, or return to Settings.';const back=document.createElement('a');back.href='/dashboard.html?review_return=settings';back.textContent='Back to Settings';status.append(document.createElement('br'),back);}},30000);
  }catch(error){status.textContent=error.message;const login=document.createElement('a');login.href='/login.html?switch_account=1&redirect='+encodeURIComponent('/dashboard.html?onboarding_replay=1');login.textContent='Sign in as Shannon';status.append(document.createElement('br'),login);}
 })();

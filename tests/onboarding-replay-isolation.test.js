@@ -1,4 +1,8 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+test('Settings review ends after setup without starting or resuming the app tour',()=>{
+ const sandbox=fs.readFileSync('js/dashboard/pbb-onboarding-replay-sandbox.js','utf8');assert.doesNotMatch(sandbox,/startFeatureTour\(/);assert.match(sandbox,/balance_preview_complete/);
+ const parent=fs.readFileSync('onboarding-replay.js','utf8');assert.match(parent,/frame.remove\(\);status.hidden=false/);assert.match(parent,/Onboarding review complete/);
+});
 test('canonical guided tour script is executable outside the deferred HTML template',()=>{
  const html=fs.readFileSync('dashboard.html','utf8'),start=html.indexOf('id="tmpl-onboarding"'),close=html.indexOf('</script>',start),tour=html.indexOf('  function getMetaPreviewStrengthDayIndex');assert.ok(close>start&&close<tour);const script=html.lastIndexOf('<script>',tour);assert.ok(script>close);new vm.Script(html.slice(script+8,html.indexOf('</script>',script)));
 });

@@ -30,12 +30,12 @@
  try{Object.defineProperty(window,'indexedDB',{value:{open(){const request={};setTimeout(()=>request.onerror?.({target:{error:Error('Preview only')}}),0);return request;},deleteDatabase(){return this.open();}}});Object.defineProperty(window,'caches',{value:{open:async()=>({match:async()=>undefined,put:async()=>{},delete:async()=>false}),keys:async()=>[],delete:async()=>false,match:async()=>undefined}});}catch{}
  window.open=()=>null;document.addEventListener('submit',event=>event.preventDefault(),true);document.addEventListener('click',event=>{const link=event.target.closest?.('a[href]');if(link&&!link.getAttribute('href').startsWith('#'))event.preventDefault();},true);
  let readySent=false;const decorate=()=>{if(!readySent&&document.getElementById('onboarding-wizard')?.classList.contains('active')){readySent=true;parent.postMessage({type:'balance_preview_ready'},'*');}const header=document.querySelector('#onboarding-wizard .wizard-header');if(header&&!header.querySelector('[data-replay-label]')){const label=document.createElement('p');label.dataset.replayLabel='true';label.textContent='Preview only · changes are not saved';label.style.cssText='font:600 11px/1.4 system-ui;color:#70551f!important;-webkit-text-fill-color:#70551f!important;margin:4px 0;text-align:center';const exit=document.createElement('button');exit.type='button';exit.textContent='Back to Settings';exit.style.cssText='display:block;margin:4px auto;background:transparent;border:0;text-decoration:underline;color:#70551f!important;-webkit-text-fill-color:#70551f!important;font:600 11px system-ui';exit.onclick=()=>parent.postMessage({type:'balance_preview_exit'},'*');label.append(exit);header.append(label);}if(typeof window.initOnboardingWizard==='function'&&!document.getElementById('onboarding-wizard')?.classList.contains('active'))window.initOnboardingWizard();};
- let setupOpened=false,tourStarted=false;
+ let setupOpened=false,reviewFinished=false;
  document.addEventListener('DOMContentLoaded',()=>{const timer=setInterval(()=>{
   const active=document.getElementById('onboarding-wizard')?.classList.contains('active');
   if(active)setupOpened=true;
-  if(setupOpened&&!active&&!tourStarted&&typeof window.startFeatureTour==='function'){
-   tourStarted=true;clearInterval(timer);window.startFeatureTour('full',{clientActivation:true,settingsReplay:true,restart:true});
+  if(setupOpened&&!active&&!reviewFinished){
+   reviewFinished=true;clearInterval(timer);parent.postMessage({type:'balance_preview_complete'},'*');
   }
  },250);setTimeout(()=>clearInterval(timer),600000);});
  document.addEventListener('pbbInitComplete',decorate);document.addEventListener('DOMContentLoaded',()=>{const t=setInterval(()=>{decorate();if(document.querySelector('[data-replay-label]')&&document.getElementById('onboarding-wizard')?.classList.contains('active'))clearInterval(t);},500);setTimeout(()=>clearInterval(t),30000);});
