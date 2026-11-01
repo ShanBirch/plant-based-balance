@@ -6,6 +6,12 @@
 [functions]
   node_bundler = "esbuild"
 
+[functions."text-coaching-membership"]
+  external_node_modules = ["stripe"]
+
+[functions."organic-coaching-continuation"]
+  external_node_modules = ["stripe"]
+
 [functions."ig-instant-draft*"]
   included_files = [".netlify/video-runtime/ffmpeg"]
 
