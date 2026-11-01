@@ -1,5 +1,5 @@
 const {supabaseQuery}=require('./_lib/client-context');
-const StripeClient=require('stripe');
+const StripeClient=require('./_lib/stripe-checkout-client');
 const PRICE='price_1UWlnXCGCyRUsOfKeq1Kn01q',PRODUCT='prod_balance_text_review_20261101',PLAN='standard_text_coaching_weekly';
 const VERSION='standard_text_4999_13w_20261101_v1';
 const TERMS='AUD49.99 now and every week. Three-month initial commitment (13 weekly payments, AUD649.87 minimum total). Includes a meal plan, workout programme updated weekly and one weekly text check-in. Voice check-ins and live sessions are not included. After the initial term, billing continues weekly until cancelled. Cancel before the next weekly payment; requests during the minimum term take effect at its end. No additional notice period or upfront fee.';

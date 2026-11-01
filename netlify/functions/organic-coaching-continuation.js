@@ -1,5 +1,5 @@
 const {supabaseQuery}=require('./_lib/client-context');
-const StripeClient=require('stripe');
+const StripeClient=require('./_lib/stripe-checkout-client');
 const PRICE='price_1UWkkrCGCyRUsOfKYcvJGqiR';
 const PLAN='organic_coaching_continuation_weekly';
 const TERMS='AUD14.70 now and every week. Includes a meal plan, weekly programme updates and one weekly text check-in; voice-note check-ins are not included. No minimum term. Cancel with Shannon before your next weekly payment. This is a separate optional paid agreement; your promised free challenge period is not shortened.';
