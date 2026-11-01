@@ -10598,6 +10598,7 @@ function initOnboardingWizard() {
     }
     closeOnboardingBlockingSurfaces();
     initWizardKeyboardFlow();
+    bindWizardChatViewportEvents();
     syncWizardViewportMetrics();
 
     // Optional pre-onboarding welcome hook. It currently returns false because

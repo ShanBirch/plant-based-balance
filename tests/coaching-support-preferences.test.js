@@ -6,7 +6,7 @@ const source=fs.readFileSync('js/dashboard/pbb-coaching-support.js','utf8');
 function harness(error=false, draft=true) {
  const fields=Object.fromEntries(['morning','after','gentle','direct'].map(k=>['support-onboarding-'+k,{checked:k==='gentle'}]));
  const storage=new Map();const calls=[];const status={textContent:''};
- const context={window:{currentUser:{id:'member'},supabaseClient:{from:()=>({select:()=>({eq:()=>({maybeSingle:async()=>({data:{morning_training:true,after_session:false,tone:'direct'}})})})}),rpc:async(name,args)=>{if(name==="my_outreach_support_eligibility")return {data:true};calls.push({name,args});return error?{error:new Error('offline')}:{data:{morning_training:args.p_morning,after_session:args.p_after_session,tone:args.p_tone,consent_source:args.p_source,revision:1}};}}},
+ const context={window:{addEventListener(){},currentUser:{id:'member'},supabaseClient:{from:()=>({select:()=>({eq:()=>({maybeSingle:async()=>({data:{morning_training:true,after_session:false,tone:'direct'}})})})}),rpc:async(name,args)=>{if(name==="my_outreach_support_eligibility")return {data:true};calls.push({name,args});return error?{error:new Error('offline')}:{data:{morning_training:args.p_morning,after_session:args.p_after_session,tone:args.p_tone,consent_source:args.p_source,revision:1}};}}},
  document:{readyState:'complete',addEventListener:()=>{},querySelectorAll:()=>[],getElementById:id=>fields[id],querySelector:()=>({querySelector:()=>status,querySelectorAll:()=>[]})},
  sessionStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)}};
  vm.runInNewContext(source,context);if(draft)context.window.BalanceCoachingSupport.markDraftRestored(); return {api:context.window.BalanceCoachingSupport,fields,storage,calls,status};
