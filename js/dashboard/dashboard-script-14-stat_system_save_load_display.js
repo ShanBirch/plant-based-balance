@@ -650,7 +650,7 @@
         }
 
         window._setBattleBet = function(amount, btnEl) {
-            window._currentBattleBet = amount;
+            window._currentBattleBet = 0;
             // Update active button styling
             if (btnEl) {
                 document.querySelectorAll('.battle-bet-btn').forEach(b => {

@@ -47,7 +47,7 @@ assert.ok(settingsView.includes('id="feed-start-battle-card"'), 'battle launcher
     "type: 'quiz'",
     'window.showQuizBattleInviteModal',
     'requestQuizBattleScriptIfNeeded();',
-    "script.src = 'lib/learning-inline.js?v=46-four-part-path';",
+    "script.src = 'lib/learning-inline.js?v=20261101-free-quiz-course-lock-v2';",
     'window.openGameChallengeModal({ preselectGameType: battleType })',
     'async function openGameChallengeModal(options = {})',
     "const preselectGameType = typeof options === 'string' ? options : options?.preselectGameType;",

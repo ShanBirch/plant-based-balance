@@ -5890,7 +5890,7 @@ window._setCreateChallengeBet = function(amount, btnEl) {
     // Update fee display
     const feeDisplay = document.getElementById('create-challenge-fee-display');
     if (feeDisplay) {
-        feeDisplay.textContent = createChallengeBetAmount.toLocaleString() + ' Coins entry fee';
+        feeDisplay.textContent = 'Free to enter';
     }
 
     // Update create button
