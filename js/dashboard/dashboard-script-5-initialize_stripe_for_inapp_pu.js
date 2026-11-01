@@ -8800,7 +8800,8 @@ function saveWizardCheckpoint() {
     window.BalanceOnboardingProgress?.save('setup', { wizard:{
         step:currentWizardStep, chatStarted:wizardChatStarted, chatComplete:wizardChatComplete,
         chatIndex:wizardChatStepIndex, answers:wizardChatAnswers, freeform:wizardChatFreeformAnswers,
-        fields, gender:selectedGender, frequency:wizardTrainingFrequency,
+        fields, profileOwner:window.currentUser?.id, profile:readSessionProfileForActiveUser(),
+        gender:selectedGender, frequency:wizardTrainingFrequency,
         days:Array.from(wizardSelectedDays), split:wizardSplitPreference,
         calendar:wizardWorkoutCalendar, times:wizardWorkoutTimes,
         cuisines:Array.from(wizardCuisinePreferences), favourites:Array.from(wizardFavoriteFoods),
@@ -8814,6 +8815,16 @@ function restoreWizardCheckpoint() {
     const saved = window.BalanceOnboardingProgress?.read();
     const draft = saved?.stage === 'setup' && saved.wizard;
     if (!draft) return false;
+    // Login restores account facts before setup resumes. Keep this member's
+    // newer unfinished answers instead of replacing them with older facts.
+    const uid=window.currentUser?.id;
+    if(uid && draft.profileOwner===uid && draft.profile){
+        const profile=draft.profile;
+        if((!profile.id || profile.id===uid) && (!profile.user_id || profile.user_id===uid)){
+            sessionStorage.setItem('userProfile',JSON.stringify(profile));
+            stampSessionProfileForActiveUser(uid);
+        }
+    }
     currentWizardStep = Math.max(1, Math.min(totalWizardSteps, Number(draft.step) || 1));
     wizardChatStarted = !!draft.chatStarted;
     wizardChatComplete = !!draft.chatComplete;

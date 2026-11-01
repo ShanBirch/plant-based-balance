@@ -29,3 +29,9 @@ test('self-setup frequency stays member-selected while the legacy two-workout gr
  for(const selfSetup of [true,false]) assert.equal(run({BalanceFreeStarter:{active:()=>true,selfSetup:()=>selfSetup}},4),selfSetup?4:2);
  assert.match(source,/!window\.BalanceFreeStarter\?\.active\(\) \|\| window\.BalanceFreeStarter\?\.selfSetup\?\.\(\) \|\| step.key !== 'weekly_capacity'/);
 });
+
+test('resuming setup keeps newer owned profile answers after login hydrates older account facts',()=>{
+ const source=read('js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js');const a=source.indexOf('function restoreWizardCheckpoint()'),b=source.indexOf('    currentWizardStep =',a);const prefix=source.slice(a,b)+'return true;}';
+ for(const owner of ['own','other']){let stored=JSON.stringify({weight:72}),stamp;const window={currentUser:{id:'own'},BalanceCoachingSupport:{mount(){}},BalanceOnboardingProgress:{read:()=>({stage:'setup',wizard:{profileOwner:owner,profile:{weight:80}}})}};
+ const ctx={window,sessionStorage:{setItem:(_k,v)=>stored=v},stampSessionProfileForActiveUser:id=>stamp=id};vm.runInNewContext(prefix,ctx);ctx.restoreWizardCheckpoint();assert.equal(JSON.parse(stored).weight,owner==='own'?80:72);assert.equal(stamp,owner==='own'?'own':undefined);}
+});
