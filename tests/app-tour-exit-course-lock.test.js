@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
-test('Settings tour replay uses the same free-month tour rather than the general XP walkthrough',()=>{
- const source=fs.readFileSync('dashboard.html','utf8'),start=source.indexOf('  window.replayFeatureTour = function(){'),end=source.indexOf('\n  };',start)+5;let options;
- const c={window:{BalanceFreeStarter:{coached:()=>true}},localStorage:{removeItem(){}},startFeatureTour:(force,o)=>options=o};vm.runInNewContext(source.slice(start,end),c);c.window.replayFeatureTour();assert.equal(options.clientActivation,true);assert.equal(options.settingsReplay,true);assert.equal(options.restart,true);
+test('Settings exposes onboarding review but no app-tour replay or walkthrough reset',()=>{
+ const source=fs.readFileSync('dashboard.html','utf8'),start=source.indexOf('<div class="settings-v2-tools">'),end=source.indexOf('</details>',start),settings=source.slice(start,end);
+ assert.match(settings,/openOnboardingReview/);assert.doesNotMatch(settings,/replayFeatureTour|resetWalkthroughTestState|Replay app tour/);assert.doesNotMatch(source,/window\.replayFeatureTour =/);
 });
 test('course access stays locked until the current authenticated account is verified, including account switches',async()=>{
  let authId='old',result=false;const window={currentUser:{id:'new'},supabaseClient:{auth:{getSession:async()=>({data:{session:{user:{id:authId}}}})},rpc:async()=>({data:result})},addEventListener(){},dispatchEvent(){}};

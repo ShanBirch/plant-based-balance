@@ -12617,11 +12617,9 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
                     <summary><span>Guides, replays &amp; app refresh</span><small>Less-used support tools</small></summary>
                     <div class="settings-v2-tools">
                         <button id="settings-onboarding-review" type="button" onclick="openOnboardingReview()"><span>🌸</span>Restart onboarding setup</button>
-                        <button type="button" onclick="replayFeatureTour()"><span>💡</span>Replay app tour</button>
                         <button id="btn-replay-weekly-wrapped" type="button" onclick="replayWeeklyWrapped()"><span>🎞️</span>Replay month wrapped</button>
                         <button type="button" onclick="openRareRewardsModal()"><span>🏆</span>View rare collection</button>
                         <button id="settings-clear-cache-btn" type="button" onclick="refreshAppCache()"><span>↻</span>Refresh app files</button>
-                        <button id="btn-reset-walkthrough-test-state" type="button" onclick="resetWalkthroughTestState()" style="display:none;"><span>TEST</span>Reset walkthrough test</button>
                         <button id="settings-allocate-stats-btn" type="button" onclick="showStatAllocationModal()" style="display:none;"><span>⚔️</span>Allocate battle stats</button>
                     </div>
                     <div id="settings-clear-app-cache" hidden></div>
@@ -14181,7 +14179,7 @@ if(!window._pbbIsIOSSafari) {
   }
 
   const steps = [
-    {tab:'dashboard',sel:'#next-obvious-steps-card',title:'Explore at your own pace',body:'Use Exit tour at any point to return to Balance. You can replay the app tour later from Settings. This tour shows the app without entering lessons or changing course progress.'},
+    {tab:'dashboard',sel:'#next-obvious-steps-card',title:'Explore at your own pace',body:'Use Exit tour at any point to return to Balance. The tour only appears during first-time onboarding. This tour shows the app without entering lessons or changing course progress.'},
     { tab:'movement-tab',sel:'#today-workout-card',condition:()=>window.BalanceFreeStarter?.standardText?.()===true,title:'Your plan and weekly text review',body:'Your membership includes a meal plan, weekly programme updates and a weekly text check-in with Shannon. Finish your setup so Shannon can review it. Voice check-ins and live sessions are separate.' },
     { tab:'profile', sel:'#settings-coaching-support', condition:()=>window.BalanceCoachingSupport?.isEligible()===true, title:'Support that suits you', body:'Choose optional morning messages on saved training days, after-session check-ins, and a gentle or firmer tone. Both switches start off. Weekly check-ins remain; change your choices anytime.' },
     {tab:'home',sel:'.header-msg-icon',title:'Your check-in, with a clear next step',body:'When Shannon attaches a weekly progress card to your check-in, open View progress beneath his text or voice note. See that week’s recorded sets and your reviewed next targets inside Balance.'},
@@ -16431,10 +16429,7 @@ window.endFeatureTour = function(skipped){
     saveTourCheckpoint();
   };
 
-  window.replayFeatureTour = function(){
-    try { localStorage.removeItem('featureTourComplete'); } catch(e){}
-    startFeatureTour('full', { settingsReplay:true, restart:true, clientActivation:!!(window.BalanceFreeStarter?.coached?.() || window.BalanceFreeStarter?.standardText?.()) });
-  };
+
 
   function clearWalkthroughTourStorage(){
     try {
@@ -17345,7 +17340,7 @@ window.endFeatureTour = function(skipped){
   // First-run onboarding now uses the guided walkthrough only. Keep legacy
   // feature-drop entries dormant so users do not see duplicate spotlight cards.
   allFeatures = [];
-  allFeatures.push({id:'app-tour-exit-course-free-20261101',tab:'dashboard',sel:'#next-obvious-steps-card',title:'Explore at your own pace',body:'Use Exit tour at any point to return to Balance. You can replay the app tour later from Settings. This tour shows the app without entering lessons or changing course progress.'});
+  allFeatures.push({id:'app-tour-exit-course-free-20261101',tab:'dashboard',sel:'#next-obvious-steps-card',title:'Explore at your own pace',body:'Use Exit tour at any point to return to Balance. The tour only appears during first-time onboarding. This tour shows the app without entering lessons or changing course progress.'});
   allFeatures.push({id:'courses-separate-access-20261101',tab:'dashboard',sel:'#next-obvious-steps-card',condition:()=>window.BalanceCourseAccess?.ready()&&window.BalanceCourseAccess.locked(),title:'Courses are separate',body:'Your app and coaching access do not unlock the course library. All courses stay locked during your free coaching month.'});
   allFeatures.push({ id:'standard-text-membership-20261101-v1',tab:'movement-tab',sel:'#today-workout-card',condition:()=>window.BalanceFreeStarter?.standardText?.()===true,title:'Your plan and weekly text review',body:'Your membership includes a meal plan, weekly programme updates and a weekly text check-in with Shannon. Finish your setup so Shannon can review it. Voice check-ins and live sessions are separate.' });
   allFeatures.push({ id:'master-external-videos-20261008', tab:'learning', sel:'#learning-content', title:'Send Master videos through your usual chat', body:'In Master Week 2, send your squat, hinge, push and pull clips to Shannon on Instagram or your usual messaging platform. Record where and when you sent each clip, then save it in the course.' });
