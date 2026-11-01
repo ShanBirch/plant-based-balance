@@ -21,3 +21,11 @@ test('Settings return bypasses setup for one navigation without changing complet
 test('Top Levels visibility depends on explicit open state, never focus or active styling',()=>{
  const css=read('css/dashboard/pbb-premium-overlays.css');assert.doesNotMatch(css,/\.feed-level-leaderboard:(focus-within|active) \.feed-level-leaderboard-(body|chevron)/);assert.match(css,/\.feed-level-leaderboard\.is-open \.feed-level-leaderboard-body\s*\{\s*display: block/);
 });
+
+test('self-setup frequency stays member-selected while the legacy two-workout grant stays capped',()=>{
+ const source=read('js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js');
+ const start=source.indexOf('function selectTrainingFrequency('),end=source.indexOf('    wizardTrainingFrequency = num;',start);
+ const run=new Function('window','num',source.slice(source.indexOf(') {',start)+3,end)+'return num;');
+ for(const selfSetup of [true,false]) assert.equal(run({BalanceFreeStarter:{active:()=>true,selfSetup:()=>selfSetup}},4),selfSetup?4:2);
+ assert.match(source,/!window\.BalanceFreeStarter\?\.active\(\) \|\| window\.BalanceFreeStarter\?\.selfSetup\?\.\(\) \|\| step.key !== 'weekly_capacity'/);
+});

@@ -9429,7 +9429,7 @@ function renderWizardChatControls() {
                 submitWizardChatAnswer();
             }
         };
-        choicesEl.innerHTML = getWizardChatOrderedOptions(step).filter(option => !window.BalanceFreeStarter?.active() || step.key !== 'weekly_capacity' || option.value === 'one_or_two').map(option => {
+        choicesEl.innerHTML = getWizardChatOrderedOptions(step).filter(option => !window.BalanceFreeStarter?.active() || window.BalanceFreeStarter?.selfSetup?.() || step.key !== 'weekly_capacity' || option.value === 'one_or_two').map(option => {
             const selected = step.type === 'multi'
                 ? wizardChatMultiSelection.has(option.value)
                 : wizardChatAnswers[step.key] === option.value;
@@ -13546,7 +13546,7 @@ function updateWizardFrequencyTip() {
 }
 
 function selectTrainingFrequency(num, options = {}) {
-    if (window.BalanceFreeStarter?.active()) num = 2;
+    if (window.BalanceFreeStarter?.active() && !window.BalanceFreeStarter?.selfSetup?.()) num = 2;
     wizardTrainingFrequency = num;
     document.getElementById('wizard-training-frequency').value = num;
 
@@ -13823,7 +13823,7 @@ function generateWizardCalendar() {
     try { userData = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
     const trainingDays = Array.from(wizardSelectedDays);
     const equipment = userData.equipment_access || 'none';
-    const recoveryOnRestDays = !window.BalanceFreeStarter?.active() && document.getElementById('wizard-recovery-days')?.checked;
+    const recoveryOnRestDays = (!window.BalanceFreeStarter?.active() || window.BalanceFreeStarter?.selfSetup?.()) && document.getElementById('wizard-recovery-days')?.checked;
     const allDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
     // Reset calendar

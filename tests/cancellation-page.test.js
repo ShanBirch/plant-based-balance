@@ -58,15 +58,15 @@ assert.equal((checkout.match(/cancellationNoticeDays: 30/g) || []).length, 5);
 assert.match(checkout, /AU\$779\.74 minimum total/);
 assert.match(checkout, /AU\$649\.87 minimum total/);
 assert.match(checkout, /AU\$299\.96 minimum total/);
-assert.match(terms, /purchased on or after 1 September 2026/);
+assert.match(terms, /Existing agreements remain unchanged/);
 assert.match(dashboard, /settings-cancel-subscription/);
 assert.match(dashboard, /onclick="openCancellationSettings\(\)"/);
-assert.match(coaching, /Direct recurring subscriptions require 30 days' notice/);
+assert.match(coaching, /Existing members keep their agreed access and terms/);
 assert.match(checkoutScript, /terms: '2026-09-01'/);
 for (const file of publicLinkFiles) {
   const source = fs.readFileSync(path.join(root, file), 'utf8');
   assert.match(source, /href="\/?cancellation\.html"/, `${file} should link to cancellation.html`);
 }
-assert.match(coaching, /Manage, pause or cancel your subscription/);
+assert.match(coaching, /Pause or cancel/);
 
 console.log('cancellation page contract passed');
