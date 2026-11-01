@@ -14675,3 +14675,9 @@ html[data-pbb-theme] :is(#game-challenge-modal,#quiz-battle-invite-overlay,#crea
 }
 html[data-pbb-theme] :is(#game-challenge-modal,#quiz-battle-invite-overlay,#create-challenge-modal,#challenge-pass-modal,#challenge-type-picker).free-game-picker button:focus-visible { outline:3px solid var(--gold,#af882f); outline-offset:2px; }
 body:has(:is(#game-challenge-modal,#quiz-battle-invite-overlay,#create-challenge-modal,#challenge-pass-modal,#challenge-type-picker).free-game-picker:not([style*="display: none"]):not([style*="display:none"])) #pwa-install-banner { display:none !important; }
+
+html[data-pbb-theme] #game-challenge-modal.free-game-picker :is(.game-type-card,.game-friend-card) div:last-child,
+html[data-pbb-theme] #quiz-battle-invite-overlay.free-game-picker .battle-invite-body [onclick*="_startQuizBattleVsAI"] div:last-child {
+ color:var(--pbb-readable-muted,#575d51) !important;
+ -webkit-text-fill-color:var(--pbb-readable-muted,#575d51) !important;
+}
