@@ -21,7 +21,7 @@
     const result=await fetch(url,{method:'GET',credentials:'omit'});const data=await result.arrayBuffer();port.postMessage({status:result.status,contentType:result.headers.get('content-type'),data},[data]);
    }catch{port.postMessage({status:503,error:'Preview only. This request was not sent.'});}finally{port.close();}
   });
-  const html=await source.text();frame.srcdoc=html.replace(/<head>/i,'<head><base href="'+location.origin+'/"><meta http-equiv="Content-Security-Policy" content="'+csp+'"><script src="/js/dashboard/pbb-onboarding-replay-sandbox.js?v=20261101-v2"></script>');
+  const html=await source.text();frame.srcdoc=html.replace(/<head>/i,'<head><base href="'+location.origin+'/"><meta http-equiv="Content-Security-Policy" content="'+csp+'"><script src="/js/dashboard/pbb-onboarding-replay-sandbox.js?v=20261101-v3"></script>');
   document.body.replaceChildren(frame);
  }catch(error){status.textContent=error.message;const login=document.createElement('a');login.href='/login.html?switch_account=1&redirect='+encodeURIComponent('/dashboard.html?onboarding_replay=1');login.textContent='Sign in as Shannon';status.append(document.createElement('br'),login);}
 })();
