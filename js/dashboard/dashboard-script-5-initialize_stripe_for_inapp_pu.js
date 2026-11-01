@@ -159,7 +159,7 @@ async function openBillingPortal() {
             btn.textContent = 'Opening...';
         }
 
-        const returnUrl = window.location.origin + '/dashboard.html?tab=dashboard&settings_return=1';
+        const returnUrl = window.location.origin + '/dashboard.html?settings_return=1';
         const response = await fetch('/.netlify/functions/create-billing-portal-session', {
             method: 'POST',
             headers: {

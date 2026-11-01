@@ -35,7 +35,7 @@ assert.match(page, /billing resumes automatically/);
 assert.match(page, /any balance already issued remains due/);
 assert.match(page, /id="subscription-settings-back"/);
 assert.match(page, /Back to Balance/);
-assert.match(page, /dashboard\.html\?tab=dashboard&settings_return=1/);
+assert.match(page, /dashboard\.html\?settings_return=1/);
 assert.doesNotMatch(page, /window\.history\.back\(\)/);
 assert.match(page, /enableCancellationSwipeBack/);
 assert.match(page, /platform === 'android' \? deltaX < -90 : deltaX > 90/);

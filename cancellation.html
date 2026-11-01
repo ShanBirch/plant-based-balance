@@ -111,7 +111,7 @@ if (new URLSearchParams(window.location.search).get('from') === 'website') {
 }
 function returnToBalanceSettings() {
  const website=new URLSearchParams(window.location.search).get('from')==='website';
- window.location.href=website?'/account.html':'/dashboard.html?tab=dashboard&settings_return=1';
+ window.location.href=website?'/account.html':'/dashboard.html?settings_return=1';
 }
 
 (function enableCancellationSwipeBack() {

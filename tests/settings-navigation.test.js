@@ -55,7 +55,7 @@ test('phone back and both platform edge gestures close the active Settings sheet
 });
 
 test('membership and cancellation return directly to Home without replaying setup',()=>{
- assert.match(cancellation,/dashboard\.html\?tab=dashboard&settings_return=1/);
+ assert.match(cancellation,/dashboard\.html\?settings_return=1/);
  assert.doesNotMatch(cancellation,/window\.history\.back\(\)/);
  assert.match(navigation,/membership\.html\?from=settings/);
  assert.match(dashboard,/onclick="openMembershipSettings\(\)"/);
