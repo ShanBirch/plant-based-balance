@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v587-calendar-safe-area';
+const CACHE_NAME = 'pbb-app-v588-isolated-onboarding-review';
 importScripts('./offline-shell.js');
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
@@ -164,7 +164,7 @@ async function shellResponse(event, url) {
     if (!response.ok && cached) return cached;
     if (response.ok && response.status === 200 && response.type !== 'opaque') {
       // Never save preview/admin impersonation HTML as the normal dashboard.
-      if (!isDashboard || !url.searchParams.has('view_as')) {
+      if (!isDashboard || (!url.searchParams.has('view_as')&&!url.searchParams.has('onboarding_replay')&&!url.searchParams.has('onboarding_source'))) {
         event.waitUntil(cache.put(isDashboard ? new URL('/dashboard.html', url) : event.request, response.clone()).catch(() => {}));
       }
     }
@@ -181,6 +181,7 @@ async function shellResponse(event, url) {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.protocol !== 'https:' && url.protocol !== 'http:') return;
+  if(url.searchParams.has('onboarding_replay')||url.searchParams.has('onboarding_source')||url.pathname==='/onboarding-replay.html'||url.pathname==='/onboarding-replay.js'||url.pathname.endsWith('/pbb-onboarding-replay-sandbox.js'))return;
   if (url.pathname.startsWith('/.netlify/') || url.hostname.endsWith('.supabase.co')) return;
 
   if (url.pathname.match(/\.(mp4|mov|webm)$/i)) {

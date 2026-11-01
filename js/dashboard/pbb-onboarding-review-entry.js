@@ -9,7 +9,7 @@
   }
  }
  window.openOnboardingReview=()=>{
-  if(window.currentUser?.id==='00a6605e-8edb-4917-85ba-24a23f179059')location.assign('/dashboard.html?onboarding_replay=1');
+  if(window.currentUser?.id==='00a6605e-8edb-4917-85ba-24a23f179059')location.assign('/onboarding-replay.html');
   else window.initOnboardingWizard?.();
  };
  document.addEventListener('DOMContentLoaded',refresh);document.addEventListener('pbbInitComplete',refresh);window.addEventListener('focus',refresh);
