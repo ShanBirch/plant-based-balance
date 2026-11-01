@@ -21,7 +21,7 @@ export default async request=>{
   if(!customer)return json({subscriptions:[],catalog,message:'No Stripe membership is linked to this login. If you paid through Apple or Google Play, manage your plan through that store. If you paid on the website, contact Shannon to link your membership.'});
   const key=env('STRIPE_SECRET_KEY');
   const list=await stripe(key,`subscriptions?customer=${encodeURIComponent(customer)}&status=all&limit=100`);
-  const subscriptions=list.data.filter(s=>['active','trialing','past_due','unpaid','paused'].includes(s.status));
+  const subscriptions=list.data.filter(s=>(!s.metadata?.user_id||s.metadata.user_id===auth.data.user.id)&&['active','trialing','past_due','unpaid','paused'].includes(s.status));
   if(request.method==='GET'){
    const rows=[];
    for(const s of subscriptions){

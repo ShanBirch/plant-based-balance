@@ -114,7 +114,7 @@ export default async (request) => {
             return json({ subscriptions: [], storeManaged: true, message: "No direct Balance subscription was found. If you paid through Apple or Google, cancel through that store." });
         }
 
-        const subscriptions = await listSubscriptions(stripeKey, user.stripe_customer_id);
+        const subscriptions = (await listSubscriptions(stripeKey, user.stripe_customer_id)).filter(s=>!s.metadata?.user_id||s.metadata.user_id===authData.user.id);
         if (request.method === "GET") {
             return json({ subscriptions: subscriptions.map(item => subscriptionSummary(item)) });
         }

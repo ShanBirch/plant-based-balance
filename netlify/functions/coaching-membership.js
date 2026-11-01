@@ -18,7 +18,9 @@ exports.handler=async event=>{
   const [links,free,relationship]=await Promise.all([query(`stripe_subscription_links?user_id=eq.${uid}&subscription_status=in.(active,trialing,past_due,unpaid,incomplete,paused)&select=stripe_subscription_id&limit=100`),query(`balance_free_starters?user_id=eq.${uid}&revoked_at=is.null&ends_at=gt.${encodeURIComponent(new Date().toISOString())}&select=ends_at&limit=1`),query(`coach_clients?client_id=eq.${uid}&select=id&limit=1`)]);
   let subscriptions=[];
   if(profile.stripe_customer_id){const listed=await stripe.subscriptions.list(profile.stripe_customer_id);subscriptions=(listed.data||[]).filter(s=>['active','trialing','past_due','unpaid','incomplete','paused'].includes(s.status));if(listed.has_more)throw Error('Your memberships need a billing review.');}
-  const hasBilling=!!subscriptions.length||!!links?.length||['active','trialing','paid','paying','past_due','unpaid'].includes(profile.subscription_status);
+  const customerHasSubscriptions=!!subscriptions.length;
+  subscriptions=subscriptions.filter(s=>!s.metadata?.user_id||s.metadata.user_id===uid);
+  const hasBilling=customerHasSubscriptions||!!links?.length||['active','trialing','paid','paying','past_due','unpaid'].includes(profile.subscription_status);
   for(const s of subscriptions){if(s.schedule){const schedule=await stripe.subscriptionSchedules.retrieve(typeof s.schedule==='string'?s.schedule:s.schedule.id);if(schedule.metadata?.balance_membership_change==='website_v1')s.balanceScheduled={name:schedule.metadata.target_name,effectiveAt:Number(schedule.metadata.effective_at)};}}
   const canBuy=!profile.is_test_account&&!hasBilling&&(!relationship?.length||!!free?.length);
   const catalog=plans.map(p=>({...p,terms:terms(p),ready:p.renewal!=='pending'}));
