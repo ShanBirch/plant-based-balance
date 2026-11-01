@@ -37,6 +37,10 @@ try{
  authenticated=false;assert.equal((await handler(request())).status,401);authenticated=true;
  linked=null;assert.deepEqual((await (await handler(request())).json()).subscriptions,[]);linked='cus_test';
  assert.equal((await handler(request({action:'preview',subscriptionId:'someone_else',token}))).status,409);
+ existing.metadata.user_id='another-member';
+ assert.deepEqual((await (await handler(request())).json()).subscriptions,[]);
+ assert.equal((await handler(request({action:'preview',subscriptionId:sub.id,token}))).status,409);
+ delete existing.metadata.user_id;
  const preview=await (await handler(request({action:'preview',subscriptionId:sub.id,token}))).json();assert(preview.quoteId);
  assert.equal((await handler(request({action:'confirm',subscriptionId:sub.id,token,accepted:true,quoteId:'stale'}))).status,409);assert.equal(writes.length,0);
  assert.equal((await handler(request({action:'confirm',subscriptionId:sub.id,token,accepted:false,quoteId:preview.quoteId}))).status,409);
@@ -48,3 +52,11 @@ const cancellation=await import('data:text/javascript;base64,'+Buffer.from(cance
 const changed=structuredClone(sub);changed.metadata.commitment_start=now;changed.metadata.commitment_weeks=26;changed.metadata.cancellation_notice_days=30;
 assert.equal(cancellation._test.cancellationTiming(changed,now).effectiveAt,now+26*week);
 console.log('Cancellation honors the new term start rather than original subscription creation');
+
+globalThis.fetch=async()=>Response.json({data:[{...liveSub,metadata:{...liveSub.metadata,user_id:'another-member'}}]});
+try {
+ assert.deepEqual((await (await cancellation.default(request())).json()).subscriptions,[]);
+ const result=await (await cancellation.default(request({action:'cancel',confirmation:'CANCEL'}))).json();
+ assert.deepEqual(result.subscriptions,[]);
+ console.log('Shared-customer cancellation cannot target another member subscription');
+}finally{globalThis.fetch=originalFetch;}
