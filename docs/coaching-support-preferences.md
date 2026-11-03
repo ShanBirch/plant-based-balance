@@ -1,5 +1,13 @@
 # Coaching support choices, 1 November 2026
 
+3 November update: Shannon authorised the separate missed-workout offer for
+Joanne and positively mapped new clients, at 19:30 member-local with a strict
+three-unanswered-contact ceiling. Existing clients including Nat and Shane stay
+excluded. See [missed-workout-followup.md](missed-workout-followup.md) for the
+separate enrollment, support-choice/hold checks, actual reply before moving a
+session, and existing sole native delivery path. The after-session toggle alone
+does not configure this lane; its off state blocks it immediately.
+
 Scope: ONLY the positively source-mapped new organic outreach/free-challenge cohort. `organic_outreach_cohort_allowed` joins exact intake enrolment, inbound acceptance, linked Instagram thread, setup and claimed grant. An immutable existing-client exclusion snapshot, existing Stripe records, current unrelated paid membership and prior purchases exclude established payers. Payment absence, account age, generic coach assignment or a preference click never establishes eligibility. Unknown identity/cohort is ineligible. Consent save, event configuration, due/preparation and immediate action ownership recheck this scope. Existing paid clients retain their old onboarding, settings, programmes, reminders and agreements; this feature is hidden and not saved for them. Audit records remain intact.
 
 Current review entry: `/dashboard.html?onboarding_replay=1`. Sign in as Shannon, not the dedicated test account. This now replays the actual full onboarding inside the real dashboard design, with support after training days. The old `/coaching-support-preview.html` entry redirects there. The standalone three-screen component demo was rejected and superseded. See docs/actual-onboarding-replay.md for the administrator gate, opaque-origin isolation and in-memory write protection.

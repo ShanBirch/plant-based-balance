@@ -1,5 +1,22 @@
 # Balance Codex Operating Brief
 
+## Missed-workout support, 3 November 2026
+
+Shannon authorised an Instagram offer to move an unlogged scheduled workout for
+Joanne Glasby (@joanne_aka_jo_) and positively verified new challenge clients
+from her intake onwards, excluding Nat and Shane. Due 19:30 member-local, never
+earlier than 90 minutes after scheduled start. Maximum three unanswered optional
+workout attempts, including uncertain sends, enforced in the database; a real
+inbound resets the budget without clearing opt-outs/holds. Reuse the existing
+five-minute materialiser, event/claim/reservation/native receipt path and sole
+messenger. See `docs/missed-workout-followup.md` and
+`database/missed-workout-followup.sql`. Missing logs are not proof of a miss;
+refresh native conversation and app evidence, honour support choices, and never
+move the actual programme without the member's explicit request and verified
+readback. This narrow new authority supersedes older blanket no-missing-log
+evening guidance only for the configured lane. It adds no sender or broad
+existing-client messaging permission.
+
 ## Domain correction - 1 November 2026
 
 Use https://balanceneurosciencefitness.com for all new Balance websites and public links. This supersedes historical plantbased-balance.org destinations below. Preserve legacy technical connections and email until individually migrated. See docs/BALANCE_DOMAIN_POLICY.md.
