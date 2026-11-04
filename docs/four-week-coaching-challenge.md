@@ -1,5 +1,7 @@
 # Four-week Balance consistency challenge
 
+> 5 November 2026: The [Messenger rapport-first policy](messenger-rapport-first.md) supersedes earlier proactive challenge guidance for default inbound Messenger. Explicit challenge enquiries and existing commitments retain their existing handling.
+
 Current composition and offer authority: the installed current-conversation-policy.md (organic_natural_20261101_v1, Shannon1November2026). The experiment is retired prospectively; historical records stay intact. Genuine person-specific rapport then an optional invitation when it naturally fits, no fitness/goal/blocker/coach qualification or assigned episode/approach. Useful unknown setup questions follow interest. Respect refusals and silence.
 
 Four weeks free from verified invitation claim, realistic assigned workouts, general meal-planning support and one weekly training/food review with appropriate adjustments. No live sessions, unlimited replies, guaranteed results or invented common start date. Clearly disclose before enrolment: no card, no automatic billing and no obligation to continue. Direct price questions get honest immediate answers. Otherwise contextual optional continued coaching is authorised only after actual product use and time to judge value at a suitable later point; verify current AUD14.70/week and billing terms, obtain separate explicit paid agreement/payment. Never proactively price during free enrolment/onboarding or auto-bill. Historical agreements retain their terms.

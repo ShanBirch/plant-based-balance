@@ -53,7 +53,7 @@ export function fastReplyContext({ threadId, runId }) {
 
 export function fastReplyClaim(input) {
     const { threadId, sourceMessageId, runId, tabId, username, nativeConversationId, finalText } = input;
-    const conversationReview = validateConversationReview(input.conversationReview, sourceMessageId);
+    const conversationReview = validateConversationReview(input.conversationReview, sourceMessageId, finalText);
     if (input.fullThreadReviewed !== true || input.nativeIdentityVerified !== true
         || input.independentHoldsChecked !== true || !input.leadState?.trim()
         || !finalText?.trim() || finalText.length > 4000) {

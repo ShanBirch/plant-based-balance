@@ -1,5 +1,7 @@
 # Balance Codex Operating Brief
 
+> 5 November 2026: The [Messenger rapport-first policy](docs/messenger-rapport-first.md) supersedes earlier proactive challenge guidance for default inbound Messenger. Explicit challenge enquiries and existing commitments retain their existing handling.
+
 ## Missed-workout support, 3 November 2026
 
 Shannon authorised an Instagram offer to move an unlogged scheduled workout for

@@ -3,8 +3,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-export const REVIEW_VERSION = 'dm_decisions_review_natural_20261101_v1';
-export const CRITERIA_REVISION = 'organic_natural_20261101_v1';
+export const REVIEW_VERSION = 'dm_decisions_review_rapport_first_20261105_v1';
+export const CRITERIA_REVISION = 'messenger_rapport_first_20261105_v1';
 export const MODEL = 'gpt-6-luna';
 export const reviewPolicy = Object.freeze({ version: REVIEW_VERSION, mode: 'advisory',
     instruction: 'The claim CLI automatically reviews eligible organic candidates with Decisions. Include decisionsContext containing the complete context SELECT result. Current policy and learned rules are supplied by the helper. A high-confidence revise result stops SQL generation for at most one rewrite; an evidenced deep-review override may resolve an incorrect flag. API unavailability uses the existing full review and records the fallback. Preserve natural timing, closure, consent, holds, source freshness and sole sender. No model score authorises a send.' });
@@ -16,10 +16,10 @@ export const CRITERIA = Object.freeze({
     "answers_turn": "Answer every direct question and substantive point using full reviewed history. Do not invent unavailable facts.",
     "grounded": "Use actual person-shared details, no invented need, activity, intent or facts.",
     "avoids_repetition": "No repeated answered questions, declined invitations, sibling-question chains, discovery ladder or silence chase.",
-    "useful_next_step": "Smallest useful move: genuine rapport, natural optional challenge invitation, useful unknown setup question after interest, or true completed exchange. Never require a question.",
-    "natural_transition": "Invite when genuine person-specific rapport naturally fits. No first/second/third conversation threshold, assigned approach, fitness qualification or mandatory training bridge. Historical experimental fields are not authority. Respect refusal and known support.",
+    "useful_next_step": "Choose the smallest useful move in context: genuine rapport, a grounded optional call, an answer to their explicit enquiry, or natural closure. Never require a question.",
+    "natural_transition": "Do not introduce a challenge unless answering an explicit inquiry or honouring an existing commitment. A quick optional call requires a concrete goal or difficulty Balance could help with and evidence of openness. A booking link requires clear acceptance of the call or a direct booking request. Respect refusal and known support.",
     "challenge_interest_followon": "Offer setup warmly after interest and ask only useful unknown details. Clearly disclose four weeks free, no card, no automatic billing and no obligation to continue before enrolment; explicit acceptance and suitability reservation remain. No early proactive pricing.",
-    "truthful_offer": "Fresh verified six-person capacity before invitation, no invented setup/completion. Direct price questions answered honestly immediately. Otherwise contextual optional paid continuation only after actual use and time to judge value, at a suitable later point, verified current price/terms and separate explicit paid agreement/payment. Never proactive pricing during free enrolment/onboarding or automatic billing."
+    "truthful_offer": "Fresh verified six-person capacity before any applicable challenge offer, no invented setup/completion. Direct price questions answered honestly immediately. Otherwise contextual optional paid continuation only after actual use and time to judge value, at a suitable later point, verified current price/terms and separate explicit paid agreement/payment. Never proactive pricing during free enrolment/onboarding or automatic billing."
 });
 
 export function buildReviewRequest(input) {
