@@ -689,3 +689,12 @@ The in-app first-login tour keeps its app showcase and ends with a text introduc
 Confirmed private continuation inclusions (Shannon, 1 November 2026): the meal plan and programming/nutrition inclusions and weekly programme updates match the AUD75 option; the weekly check-in is TEXT, not a voice note. No automatic voice-note entitlement. Keep the confirmed AUD14.70 weekly rate and separate existing terms. Do not call the offers identical, invent a usual-price comparison or add a seven-day deadline. AUD49.99/AUD15 suggestions remain exploratory, with no new tier or price change authorised.
 
 Home-visit PT retired, 1 November 2026: Shannon explicitly said no personal training at clients' homes. Remove the local come-to-you offer, AUD120 home session and AUD170 Home PT + Balance bundle from public promotion. Keep online/Zoom coaching and independent home-workout programming; do not cancel existing agreements/bookings. The old local Facebook home-PT campaign is paused and its old copy is historical only.
+
+## Story Commenter reporting
+
+For daily Story Commenter send and reply counts, query
+`select * from public.story_commenter_daily_report(start_date, end_date)`
+with inclusive Brisbane calendar dates. It combines live and archived send
+receipts and deduplicates by outbound message ID. It counts people with a
+synced inbound message after the send and before their next verified Story
+send, grouped by the original send date. Label today's count as partial.
