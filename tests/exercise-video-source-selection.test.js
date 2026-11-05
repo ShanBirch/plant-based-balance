@@ -6,7 +6,7 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 test('monitored demos prefer same-site playback and retain an independent fallback', () => {
   const window = { location: new URL('https://plantbased-balance.org/dashboard.html') };
-  vm.runInNewContext(fs.readFileSync(path.join(root, 'js/dashboard/pbb-exercise-video-backups.js'), 'utf8'), { window, URL });
+  vm.runInNewContext(fs.readFileSync(path.join(root, 'js/dashboard/pbb-exercise-video-backups.js'), 'utf8'), { window, URL, document: { baseURI: window.location.href } });
   for (const demo of JSON.parse(fs.readFileSync(path.join(root, 'data/exercise-video-backups.json')))) {
     const preferred = window.resolveExerciseVideoSource(demo.primary);
     assert.equal(new URL(preferred).origin, window.location.origin, demo.name);

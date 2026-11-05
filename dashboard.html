@@ -19277,7 +19277,7 @@ if (window._pbbIsIOSSafari) {
 if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
-            var scripts = ['exercise_videos.js?v=20260813-global-phone-video-v1', 'workout_library.js', 'workout_library_extended.js?v=1-mat-only-prebuilt'];
+            var scripts = ['exercise_videos.js?v=20261105-yoga-same-site', 'workout_library.js', 'workout_library_extended.js?v=1-mat-only-prebuilt'];
             var loaded = 0;
             scripts.forEach(function(src) {
                 var s = document.createElement('script');
@@ -19296,7 +19296,7 @@ if (window._pbbIsIOSSafari) {
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="exercise_videos.js?v=20260813-global-phone-video-v1"><\/script>');
+    document.write('<script src="exercise_videos.js?v=20261105-yoga-same-site"><\/script>');
     document.write('<script src="workout_library.js"><\/script>');
     document.write('<script src="workout_library_extended.js?v=1-mat-only-prebuilt"><\/script>');
 }
@@ -19308,7 +19308,7 @@ if (typeof WORKOUT_LIBRARY !== 'undefined' && typeof WORKOUT_LIBRARY_EXTENDED !=
     WORKOUT_LIBRARY.home = WORKOUT_LIBRARY_EXTENDED.home;
 }
 </script>
-<script src="js/dashboard/pbb-exercise-video-backups.js?v=3-srcdoc"></script>
+<script src="js/dashboard/pbb-exercise-video-backups.js?v=4-yoga-same-site"></script>
 <script>
 // Script-7 (29KB) - video logic. Defer on iOS to reduce memory pressure.
 var pbbVideoLogicSrc = 'js/dashboard/dashboard-script-7-video_logic.js?v=20261005-set-options';
