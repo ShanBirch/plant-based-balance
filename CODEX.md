@@ -700,3 +700,9 @@ with inclusive Brisbane calendar dates. It combines live and archived send
 receipts and deduplicates by outbound message ID. It counts people with a
 synced inbound message after the send and before their next verified Story
 send, grouped by the original send date. Label today's count as partial.
+
+## Arunima program video safeguard — 5 November 2026
+
+- Her earlier playback repairs use verified same-origin H.264 copies. The database trigger `guard_arunima_program_video_sources` now normalizes both `video_url` and `videoUrl` on every program insert/schedule update for Arunima, across app, coaching and direct SQL writes.
+- Known demos are mapped to the verified same-site copies, including when their URL is missing. A new external or missing unrecognized demo is rejected before saving. For a new exercise, first normalize and verify a same-origin `/assets/exercise-videos/compat/` or `/assets/exercise-videos/backup/` MP4 and assign that URL. Do not disable the guard to save an external demo.
+- The guard preserves prescriptions and does not change other clients. Its regression is `supabase/tests/arunima_program_video_sources.sql` (synthetic writes inside a rollback transaction). File existence/playback still needs verification when adding new media; this guard cannot prevent future hosting outages.
