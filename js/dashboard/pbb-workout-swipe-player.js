@@ -610,7 +610,7 @@
                 top: 0;
                 z-index: 1;
                 min-height: 64px;
-                padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px;
+                padding: calc(10px + max(42px, env(safe-area-inset-top, 0px))) 14px 10px;
                 display: grid;
                 grid-template-columns: 48px minmax(0, 1fr) 48px;
                 align-items: center;
