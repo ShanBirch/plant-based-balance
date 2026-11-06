@@ -2125,7 +2125,7 @@ const EXERCISE_VIDEOS = {
   "Plank Shoulder Tap": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/4f95c0910fa1fd222a88234b.mp4",
   "Wide Grip Push Up": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/d51e3326f40822c0039a02f2.mp4",
   "Plank": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/5d89bdb72cbf41264de67eba.mp4",
-  "Air Squat": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/e0bec3ad911d35cbe1863d4a.mp4",
+  "Air Squat": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/fb8983b87a8e9d66a5583902.mp4",
   "Sumo Squat": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/7524664b74b1c822e07b49f2.mp4",
   "Step Up": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/34b784303496db64df6cb2fd.mp4",
   "Bulgarian Split Squat": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/f68d77eabdcdee3234f302a7.mp4",
