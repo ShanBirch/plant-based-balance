@@ -16809,34 +16809,8 @@ async function renderMovementView() {
     })();
     }
 
-    // Personalised-program members should see their own weekly plan here. The
-    // coach sample-workout card is useful for browsing, but makes an assigned
-    // plan look like several conflicting programs.
-    if (usingCustomProgram && !window.BalanceFreeStarter?.coached?.()) {
-        const personalWeekDiv = document.createElement('div');
-        const personalSessions = WEEKLY_SCHEDULE
-            .filter(item => item?.inlineWorkout && Array.isArray(item.inlineWorkout.exercises) && item.inlineWorkout.exercises.length > 0)
-            .map(item => {
-                const day = typeof escapeCalendarHtml === 'function' ? escapeCalendarHtml(item.displayDay || item.day || '') : (item.displayDay || item.day || '');
-                const name = typeof escapeCalendarHtml === 'function' ? escapeCalendarHtml(item.inlineWorkout.name || 'Gym session') : (item.inlineWorkout.name || 'Gym session');
-                const exercises = item.inlineWorkout.exercises.map(exercise => `<li>${escapeCalendarHtml(exercise.name)} · ${escapeCalendarHtml(String(exercise.sets || ''))} sets × ${escapeCalendarHtml(String(exercise.reps || ''))}</li>`).join('');
-                return `<details style="font-size:0.8rem; padding:10px; border:1px solid rgba(255,255,255,0.24); border-radius:12px; background:rgba(255,255,255,0.1); color:#fff; width:100%;"><summary style="font-weight:800; cursor:pointer;">${day} · ${name}</summary><p>Programme preview · review with Shannon before starting.</p><ul style="padding-left:20px; line-height:1.7;">${exercises}</ul><p>${escapeCalendarHtml(item.inlineWorkout.description || '')}</p></details>`;
-            })
-            .join('');
-        personalWeekDiv.id = 'mvmt-personal-week-card';
-        personalWeekDiv.style.cssText = "position:relative; min-height:140px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.15); background:linear-gradient(135deg,#111111 0%,#2a1a05 55%,#c9a227 100%); grid-column:span 2; padding:18px 20px; color:white;";
-        personalWeekDiv.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
-                <div>
-                    <div style="font-size:0.7rem; font-weight:800; opacity:0.9; letter-spacing:0.5px; text-transform:uppercase;">Your personalised plan</div>
-                    <div style="font-size:1.15rem; font-weight:800; line-height:1.15; margin-top:3px;">Your training this week</div>
-                </div>
-                <div style="font-size:2rem; opacity:0.55;">🏋️</div>
-            </div>
-            <div style="display:flex; flex-wrap:wrap; gap:6px;">${personalSessions}</div>
-        `;
-        gridContainer.appendChild(personalWeekDiv);
-    } else if (!window.BalanceFreeStarter?.coached?.()) {
+    // Assigned sessions already appear in the calendar and workout cards.
+    if (!usingCustomProgram && !window.BalanceFreeStarter?.coached?.()) {
     // Add 'Coach's Workouts This Week' Card for people browsing the library.
     const weekDiv = document.createElement('div');
     weekDiv.id = 'mvmt-week-workouts-card';

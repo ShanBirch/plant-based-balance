@@ -26,16 +26,16 @@ test('active personalised programs are not replaced by automatic recovery sugges
   assert.match(movement, /if \(!usingCustomProgram && !isMale/);
 });
 
-test('Movement shows one personalised weekly plan and keeps the current custom workout available', () => {
+test('Movement omits the duplicate weekly panel and keeps the current custom workout available', () => {
   assert.match(movement, /const flexibleStartOffset = hasWorkoutOverride \? 0 : 1/);
-  assert.match(movement, /Your personalised plan/);
-  assert.match(movement, /Your training this week/);
-  assert.match(movement, /if \(usingCustomProgram\)/);
+  assert.doesNotMatch(movement, /mvmt-personal-week-card/);
+  assert.doesNotMatch(movement, /Your training this week/);
+  assert.match(movement, /if \(!heroSched && usingCustomProgram && scheduleItem.inlineWorkout/);
 });
 
 test('the repaired Movement bundle is cache-busted', () => {
   assert.equal(
-    (dashboard.match(/dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=191-program-card-recovery/g) || []).length,
+    (dashboard.match(/dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=20261107-movement-panel-removal/g) || []).length,
     3
   );
 });
