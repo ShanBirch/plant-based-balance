@@ -1034,7 +1034,7 @@
     function ensureFocusCard(card, index, cards) {
         const seconds = root.getWorkoutRestSeconds(card);
         card.querySelectorAll('.workout-rest-period:not(button)').forEach((label) => { label.textContent = seconds + 's'; });
-        card.classList.toggle('workout-rest-timed', card.dataset.exerciseName ? /plank|hold|stretch/i.test(card.dataset.exerciseName) : false);
+        card.classList.toggle('workout-rest-timed', typeof root.isTimeBasedExercise === 'function' ? root.isTimeBasedExercise({ name: card.dataset.exerciseName || '', reps: card.dataset.prescribedReps || '' }) : /plank|hold|stretch/i.test(card.dataset.exerciseName || ''));
         const heading = card.querySelector('.workout-rest-heading')?.parentElement;
         if (heading) {
             heading.classList.add('workout-set-heading');
