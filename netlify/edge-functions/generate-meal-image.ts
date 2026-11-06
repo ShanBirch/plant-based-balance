@@ -45,7 +45,8 @@ function ingredientList(value: unknown) {
 }
 
 async function generateOpenAIImage(apiKey: string, prompt: string) {
-  const models = ["gpt-image-1.5", "gpt-image-1"];
+  // Supported replacements; keep the same JPEG/medium output contract and Gemini fallback.
+  const models = ["gpt-image-2.6-flare", "gpt-image-2.6-sunburst"];
   let lastError = "";
   for (const model of models) {
     const response = await fetch("https://api.openai.com/v1/images/generations", {
