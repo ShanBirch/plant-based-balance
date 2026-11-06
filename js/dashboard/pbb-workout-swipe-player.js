@@ -432,7 +432,7 @@
                 background: var(--workout-focus-surface) !important;
                 border-color: var(--workout-focus-border) !important;
             }
-            #view-active-workout.workout-focus-pilot .workout-swipe-prescription,
+            #view-active-workout.workout-focus-pilot .workout-swipe-prescription { display:flex !important; flex-wrap:wrap; gap:6px; color:var(--workout-focus-text); -webkit-text-fill-color:var(--workout-focus-text); }
             #view-active-workout.workout-focus-pilot .exercise-note-section { display: none !important; }
             #view-active-workout.workout-focus-pilot .exercise-logger-card :is(.workout-exercise-tip, .exercise-weekly-plan, .exercise-coach-cue) { display: none !important; }
             #view-active-workout.workout-focus-pilot .workout-set-row {
