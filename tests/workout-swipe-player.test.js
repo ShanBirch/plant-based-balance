@@ -49,7 +49,7 @@ test('exercise page index stays inside available cards', () => {
 test('dashboard loads the player once and cache-busts both main loader paths', () => {
     const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
     const serviceWorker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
-    assert.equal((html.match(/pbb-workout-swipe-player\.js\?v=18-workout-messages/g) || []).length, 1);
+    assert.equal((html.match(/pbb-workout-swipe-player\.js\?v=23-cues-banner-clearance/g) || []).length, 1);
     assert.equal((html.match(/dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=/g) || []).length, 3);
     assert.match(serviceWorker, /pbb-app-v587-calendar-safe-area/);
     assert.match(html, /id="workout-add-existing-wrap"/);
@@ -89,7 +89,9 @@ test('focus menu and set controls call the live workout functions', () => {
     assert.match(source, /root\.startRestTimer\(true, root\.getWorkoutRestSeconds\(card\)\)/);
     assert.match(source, /pbb-theme-dark #view-active-workout\.workout-focus-pilot/);
     assert.match(source, /workout-focus-cues-page/);
-    assert.match(source, /workout-focus-pilot \.workout-swipe-prescription,[\s\S]*exercise-note-section \{ display: none !important; \}/);
+    assert.match(source, /workout-focus-pilot \.workout-swipe-prescription \{ display:flex !important;/);
+    assert.match(source, /inset: var\(--admin-view-banner-offset, 0px\) 0 0/);
+    assert.match(source, /padding: calc\(10px \+ max\(42px, env\(safe-area-inset-top, 0px\)\)\)/);
     assert.match(source, /width: 38px;[\s\S]*height: 34px;/);
     assert.match(source, /viewBox="0 0 24 24" aria-hidden="true" focusable="false"/);
     assert.match(source, /<circle cx="5" cy="12" r="2"\/><circle cx="12" cy="12" r="2"\/><circle cx="19" cy="12" r="2"\/>/);
