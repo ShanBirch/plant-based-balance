@@ -963,7 +963,7 @@
         wrapper.classList.toggle('workout-focus-set-complete', shouldComplete);
         const button = wrapper.querySelector('.workout-focus-set-done');
         if (button) {
-            button.textContent = 'Start';
+            button.textContent = '▶';
             button.setAttribute('aria-pressed', String(shouldComplete));
             button.setAttribute('aria-label', (shouldComplete ? 'Restart' : 'Start') + ' ' + button.dataset.restSeconds + ' second rest for set ' + wrapper.querySelector('.set-number')?.textContent.trim());
         }
@@ -1054,7 +1054,7 @@
             button.type = 'button';
             button.className = 'workout-focus-set-done workout-rest-period';
             button.dataset.restSeconds = String(seconds);
-            button.textContent = 'Start';
+            button.textContent = '▶';
             button.setAttribute('aria-label', 'Start ' + seconds + ' second rest for set ' + wrapper.querySelector('.set-number')?.textContent.trim());
             button.setAttribute('aria-pressed', 'false');
             button.addEventListener('click', () => {
