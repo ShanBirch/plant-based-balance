@@ -595,7 +595,7 @@
             }
             #view-active-workout.workout-focus-pilot #workout-focus-cues-page {
                 position: fixed;
-                inset: 0;
+                inset: var(--admin-view-banner-offset, 0px) 0 0;
                 z-index: 1300;
                 display: none;
                 flex-direction: column;
