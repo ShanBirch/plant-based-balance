@@ -18202,8 +18202,8 @@ function getSetRowHtml(exName, setNum, isTimeBased, prefillData) {
             <div class="workout-set-row" style="display:grid; grid-template-columns:30px 1fr 1fr 1fr 52px 28px 28px; gap:8px; align-items:center; padding:10px 15px; border-top:1px solid #f8fafc;">
                 <div class="set-number" style="font-weight:800; color:#94a3b8; font-size:0.85rem; text-align:center;">${setNum}</div>
                 <div style="position:relative;">
-                    <input type="text" class="input-time" placeholder="${isTimeBased ? 'sec' : '-'}" value="${prefillTime}" style="width:100%; border:none; background:#f8fafc; border-radius:8px; padding:10px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.9rem;">
-                    ${isTimeBased ? '<svg viewBox="0 0 24 24" style="position:absolute; left:4px; top:50%; transform:translateY(-50%); width:12px; height:12px; fill:#94a3b8;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>' : ''}
+                    <input type="text" class="input-time" placeholder="${isTimeBased ? 'sec' : '-'}" value="${prefillTime}" style="padding-left:36px;box-sizing:border-box;width:100%; border:none; background:#f8fafc; border-radius:8px; padding:10px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.9rem;">
+                    ${isTimeBased ? '<button type="button" class="exercise-time-start" onclick="startExerciseTimer(this)" aria-label="Start exercise timer" title="Start exercise countdown" style="position:absolute;left:0;top:0;bottom:0;width:36px;border:0;background:transparent;color:var(--text-main);cursor:pointer;touch-action:manipulation;">▶</button><svg viewBox="0 0 24 24" style="display:none; position:absolute; left:4px; top:50%; transform:translateY(-50%); width:12px; height:12px; fill:#94a3b8;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>' : ''}
                 </div>
                 <input type="text" class="input-reps" placeholder="Reps" value="${prefillReps}" style="width:100%; border:none; background:#f8fafc; border-radius:8px; padding:10px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.9rem;">
                 <input type="text" class="input-kg" placeholder="Kg" value="${prefillKg}" style="width:100%; border:none; background:#f8fafc; border-radius:8px; padding:10px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.9rem;">
@@ -18794,6 +18794,20 @@ let _restTimerSecondsLeft = 0;
 let _restTimerTotal = 0;
 let _restTimerDeadline = 0;
 let _restTimerHideTimeout = null;
+let _workoutTimerMode = 'rest';
+let _workoutTimerLabel = 'Rest';
+function startExerciseTimer(button) {
+    const row = button.closest('.set-wrapper');
+    const seconds = Number(row?.querySelector('.input-time')?.value);
+    if (!Number.isFinite(seconds) || seconds <= 0 || seconds > 86400) {
+        if (typeof showToast === 'function') showToast('Enter a duration in seconds first.', 'info');
+        return;
+    }
+    const card = button.closest('.exercise-logger-card');
+    const set = row.querySelector('.set-number')?.textContent?.trim() || '';
+    startRestTimer(true, Math.ceil(seconds), { label: (card?.dataset?.exerciseName || 'Exercise') + (set ? ' · Set ' + set : '') });
+}
+
 
 function _getRestTimerDuration() {
     const val = localStorage.getItem('pbb_rest_timer_duration');
@@ -18801,7 +18815,13 @@ function _getRestTimerDuration() {
     return parseInt(val) || 90;
 }
 
-function startRestTimer(manual, exerciseDuration) {
+function startRestTimer(manual, exerciseDuration, exerciseTimer) {
+    _workoutTimerMode = exerciseTimer ? 'exercise' : 'rest';
+    _workoutTimerLabel = exerciseTimer ? exerciseTimer.label : 'Rest';
+    const title = document.getElementById('workout-timer-label');
+    if (title) title.textContent = _workoutTimerLabel;
+    const presets = document.getElementById('workout-timer-presets');
+    if (presets) presets.style.display = exerciseTimer ? 'none' : 'flex';
     const activeCard = document.querySelector('.exercise-logger-card.workout-swipe-active');
     let duration = Number(exerciseDuration) || (activeCard ? getWorkoutRestSeconds(activeCard) : _getRestTimerDuration());
     if (!duration) {
@@ -18893,7 +18913,7 @@ function _updateRestTimerDisplay() {
 function _onRestTimerDone() {
     if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
     const display = document.getElementById('rest-timer-display');
-    if (display) { display.textContent = 'GO!'; display.style.color = '#4ade80'; }
+    if (display) { display.textContent = _workoutTimerMode === 'exercise' ? 'Done!' : 'GO!'; display.style.color = '#4ade80'; }
     _restTimerHideTimeout = setTimeout(() => _hideRestTimerOverlay(), 1500);
 }
 

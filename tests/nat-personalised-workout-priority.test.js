@@ -35,7 +35,7 @@ test('Movement omits the duplicate weekly panel and keeps the current custom wor
 
 test('the repaired Movement bundle is cache-busted', () => {
   assert.equal(
-    (dashboard.match(/dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=20261107-movement-panel-removal/g) || []).length,
+    (dashboard.match(/dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=20261107-exercise-countdown/g) || []).length,
     3
   );
 });
