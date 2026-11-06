@@ -609,7 +609,7 @@
                 position: sticky;
                 top: 0;
                 z-index: 1;
-                min-height: 64px;
+                min-height: calc(64px + max(42px, env(safe-area-inset-top, 0px))); height:auto; flex-shrink:0; box-sizing:border-box;
                 padding: calc(10px + max(42px, env(safe-area-inset-top, 0px))) 14px 10px;
                 display: grid;
                 grid-template-columns: 48px minmax(0, 1fr) 48px;
