@@ -18794,6 +18794,36 @@ let _restTimerSecondsLeft = 0;
 let _restTimerTotal = 0;
 let _restTimerDeadline = 0;
 let _restTimerHideTimeout = null;
+let _workoutTimerAudio = null;
+function prepareWorkoutTimerSound() {
+    try {
+        const Audio = window.AudioContext || window.webkitAudioContext;
+        if (!Audio) return;
+        if (!_workoutTimerAudio || _workoutTimerAudio.state === 'closed') _workoutTimerAudio = new Audio();
+        if (_workoutTimerAudio.state === 'suspended') _workoutTimerAudio.resume().catch(() => {});
+    } catch (e) { /* Countdown still works when audio is unavailable. */ }
+}
+function playWorkoutTimerSound() {
+    try {
+        const context = _workoutTimerAudio;
+        if (!context || context.state !== 'running') return;
+        [660, 880].forEach((frequency, index) => {
+            const tone = context.createOscillator();
+            const gain = context.createGain();
+            const start = context.currentTime + index * 0.18;
+            tone.type = 'sine';
+            tone.frequency.value = frequency;
+            gain.gain.setValueAtTime(0, start);
+            gain.gain.linearRampToValueAtTime(0.16, start + 0.015);
+            gain.gain.exponentialRampToValueAtTime(0.001, start + 0.25);
+            tone.connect(gain);
+            gain.connect(context.destination);
+            tone.onended = () => { tone.disconnect(); gain.disconnect(); };
+            tone.start(start);
+            tone.stop(start + 0.26);
+        });
+    } catch (e) { /* A blocked sound must not interrupt timer completion. */ }
+}
 let _workoutTimerMode = 'rest';
 let _workoutTimerLabel = 'Rest';
 function startExerciseTimer(button) {
@@ -18816,6 +18846,7 @@ function _getRestTimerDuration() {
 }
 
 function startRestTimer(manual, exerciseDuration, exerciseTimer) {
+    prepareWorkoutTimerSound();
     _workoutTimerMode = exerciseTimer ? 'exercise' : 'rest';
     _workoutTimerLabel = exerciseTimer ? exerciseTimer.label : 'Rest';
     const title = document.getElementById('workout-timer-label');
@@ -18911,6 +18942,7 @@ function _updateRestTimerDisplay() {
 }
 
 function _onRestTimerDone() {
+    playWorkoutTimerSound();
     if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
     const display = document.getElementById('rest-timer-display');
     if (display) { display.textContent = _workoutTimerMode === 'exercise' ? 'Done!' : 'GO!'; display.style.color = '#4ade80'; }
