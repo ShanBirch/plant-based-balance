@@ -1090,6 +1090,7 @@
       '.pbb-wci-field-help{font-size:.68rem;line-height:1.35;font-weight:750;color:rgba(255,255,255,.56);}',
       '.pbb-wci-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}',
       '.pbb-wci-choice{position:relative;display:flex;align-items:center;justify-content:center;min-height:42px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);padding:8px;text-align:center;font-size:.74rem;line-height:1.25;font-weight:900;color:rgba(255,255,255,.78);cursor:pointer;}',
+      '.pbb-wci-training-days{grid-template-columns:repeat(4,minmax(0,1fr));}.pbb-wci-choice:has(input:disabled){opacity:.45;cursor:not-allowed}.pbb-wci-choice:has(input:focus-visible){outline:2px solid #b78a2e;outline-offset:2px}',
       '.pbb-wci-choice input{position:absolute;opacity:0;pointer-events:none;}',
       '.pbb-wci-choice:has(input:checked){border-color:rgba(245,217,138,.7);background:rgba(245,217,138,.18);color:#fff;box-shadow:0 0 0 1px rgba(245,217,138,.12) inset;}',
       '.pbb-wci-rating{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;}',
@@ -1272,6 +1273,29 @@
     };
   }
 
+  async function loadTrainingPlan(){
+    state.trainingPlan = null;
+    if (isExplicitPreviewEnabled()) { state.trainingPlan = {available:true, count:3, days:['Mon','Wed','Fri'], locked_days:[], week_start:'2026-11-16', week_end:'2026-11-22', signature:'preview'}; return; }
+    try {
+      var token = await weeklyCheckinAccessToken();
+      if (!token) throw new Error('Login required');
+      var reply = await fetch('/.netlify/functions/submit-weekly-checkin', {headers:{Authorization:'Bearer ' + token}});
+      var result = await reply.json();
+      if (!reply.ok || !result.ok) throw new Error('Could not load training days');
+      state.trainingPlan = result.training_plan;
+    } catch (_) { state.trainingPlan = {available:false, reason:'Your training days could not be loaded. Reopen the check-in to try again.'}; }
+  }
+
+  function renderTrainingDays(){
+    var plan = state.trainingPlan;
+    if (!plan || !plan.available) return '<p class="pbb-wci-field-help">' + escapeHtml(plan && plan.reason || 'Your training days are unavailable.') + '</p>';
+    return '<fieldset class="pbb-wci-field" style="border:0;padding:0;margin:0;min-width:0"><legend class="pbb-wci-field-label">Which days would you like to train next week?</legend>' +
+      '<p class="pbb-wci-field-help">Choose ' + plan.count + ' days for ' + escapeHtml(new Date(plan.week_start + 'T12:00:00').toLocaleDateString('en-AU', {weekday:'short',day:'numeric',month:'short'})) + ' to ' + escapeHtml(new Date(plan.week_end + 'T12:00:00').toLocaleDateString('en-AU', {weekday:'short',day:'numeric',month:'short'})) + '. Your existing workouts stay in order. The change applies to that week only.</p>' +
+      '<div class="pbb-wci-choice-grid pbb-wci-training-days">' + ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(function(day){
+        return '<label class="pbb-wci-choice"><input type="checkbox" name="training_day" value="' + day + '"' + (plan.days.indexOf(day)!==-1 ? ' checked' : '') + ((plan.locked_days || []).indexOf(day)!==-1 ? ' disabled' : '') + '><span>' + day + '</span></label>';
+      }).join('') + '</div><p class="pbb-wci-field-help" data-wci-day-count aria-live="polite">' + plan.days.length + ' of ' + plan.count + ' days selected.</p><p class="pbb-wci-field-help">Submitting your check-in updates those days automatically. Any fixed coaching appointments keep their existing days.</p></fieldset>';
+  }
+
   function renderWeeklyReflectionForm(data){
     var goalContext = weeklyReflectionGoalContext(data);
     var goalPrompt = goalContext.labels.length
@@ -1282,6 +1306,7 @@
       '  <h3>Share your week with Shannon</h3>',
       '  <form class="pbb-wci-form" id="weekly-checkin-response-form">',
       '    <p class="pbb-wci-form-intro">' + goalPrompt + '</p>',
+      renderTrainingDays(),
       '    <div class="pbb-wci-field">',
       '      <div class="pbb-wci-field-label">How did this week feel overall?</div>',
       '      <div class="pbb-wci-choice-grid">',
@@ -1411,6 +1436,11 @@
       occurrence: activeOccurrence() || 'weekly',
       goals: weeklyGoalSnapshot(currentData())
     };
+    if (state.trainingPlan && state.trainingPlan.available) {
+      var selectedDays = formData.getAll('training_day');
+      if (selectedDays.length !== state.trainingPlan.count) { setWeeklyReflectionError(form, 'Choose exactly ' + state.trainingPlan.count + ' workout days for next week.'); return; }
+      payload.training_days = { days:selectedDays, week_start:state.trainingPlan.week_start, signature:state.trainingPlan.signature };
+    }
     payload.accountability_addons = formData.getAll('accountability_addon').map(function(value){ return String(value || ''); }).filter(Boolean);
 
     if (!payload.overall || !payload.win || !payload.confidence || !payload.support) {
@@ -1439,6 +1469,18 @@
         });
         var result = await response.json().catch(function(){ return {}; });
         if (!response.ok || !result.ok) throw new Error(result.error || 'Your check-in could not be sent.');
+
+        if (result.training_days) {
+          var userId = getReviewUserId();
+          var entries = {};
+          try { entries = JSON.parse(localStorage.getItem('pbb_weekly_workout_day_orders:' + userId) || '{}'); } catch (_) {}
+          entries[result.training_days.week_start] = result.training_days;
+          if (typeof window.cacheWeeklyWorkoutDayOrders === 'function') window.cacheWeeklyWorkoutDayOrders(entries);
+          if (window.userFacts && window._pbbFactsCacheUserId === userId) {
+            window.userFacts.additional_data = Object.assign({}, window.userFacts.additional_data || {}, {weekly_workout_day_orders:entries});
+          }
+          if (typeof window.renderWeeklyCalendar === 'function') window.renderWeeklyCalendar();
+        }
 
         if (payload.support === 'accountability' && payload.accountability_addons.length) {
           var addonResponse = await fetch('/.netlify/functions/create-accountability-addon-checkout', {
@@ -1473,6 +1515,8 @@
             support: payload.support,
             course_week: payload.course_week || null,
             course_experiment_completed: payload.course_experiment_completed,
+            training_days_selected: payload.training_days ? payload.training_days.days.length : 0,
+            training_schedule_week: payload.training_days ? payload.training_days.week_start : null,
             goal_count: payload.goals.length
           }, { immediate: true });
         }
@@ -1487,7 +1531,7 @@
       if (window.pbbNextSteps && typeof window.pbbNextSteps.refresh === 'function') {
         window.pbbNextSteps.refresh();
       }
-      showToast('Check-in sent to Shannon.', 'success');
+      showToast(payload.training_days ? 'Check-in sent. Your workout days for next week are saved.' : 'Check-in sent to Shannon.', 'success');
     } catch (error) {
       setWeeklyReflectionError(form, error && error.message ? error.message : 'Your check-in could not be sent. Please try again.');
       if (submitButton) {
@@ -1708,6 +1752,7 @@
       return;
     }
     try { await window.BalanceLearnActionReview?.load(); } catch (error) { showToast(error.message, 'error'); return; }
+    await loadTrainingPlan();
     ensureStyles();
     markReviewViewed();
     try {
@@ -1765,7 +1810,11 @@
     if (closeBtn) closeBtn.addEventListener('click', closeWeeklyCheckinPreview);
     if (responseForm) {
       responseForm.addEventListener('submit', submitWeeklyReflection);
-      responseForm.addEventListener('change', function(){ updateAccountabilityAddons(responseForm); });
+      responseForm.addEventListener('change', function(){
+        updateAccountabilityAddons(responseForm);
+        var counter = responseForm.querySelector('[data-wci-day-count]');
+        if (counter && state.trainingPlan) counter.textContent = responseForm.querySelectorAll('[name="training_day"]:checked').length + ' of ' + state.trainingPlan.count + ' days selected.';
+      });
       updateAccountabilityAddons(responseForm);
     }
 

@@ -21,6 +21,7 @@ function loadEndpointTestHelpers() {
     fetch: async () => { throw new Error('fetch should not run in helper tests'); },
     require(request) {
       if (['./_lib/learn-action-review','./_lib/learn-action-ai-review'].includes(request)) return {};
+      if (request === './_lib/checkin-training-days') return require('../netlify/functions/_lib/checkin-training-days');
       if (request === 'crypto') return require('node:crypto');
       if (request === '../../lib/learn-weekly-actions') return require('../lib/learn-weekly-actions');
       if (request === './_lib/client-context') {

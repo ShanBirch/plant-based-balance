@@ -2024,7 +2024,7 @@ document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=38-tour-
     document.write('<script src="lib/learn-action-review.js?v=retired-20261008"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=coached-month-v1-20261023-lesson-handoff"><\/script>');
     document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=20261101-inbox-welcome-v3"><\/script>');
-    document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=40-learning-only"><\/script>');
+    document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=41-training-days"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=13-course-photo-sync');
@@ -2036,7 +2036,7 @@ window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=38-tou
     window._pbbDeferredQueue.push('lib/learn-action-review.js?v=retired-20261008');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=coached-month-v1-20261023-lesson-handoff');
     window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=20261101-inbox-welcome-v3');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=40-learning-only');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=41-training-days');
 }
 </script>
 
@@ -13001,7 +13001,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261107-timer-chime&cohort_diets=1&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261111-checkin-days&cohort_diets=1&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13043,7 +13043,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261107-timer-chime&cohort_diets=1&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261111-checkin-days&cohort_diets=1&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13062,7 +13062,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261107-timer-chime"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261111-checkin-days"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=24-cues-header-height"></script>
@@ -14173,6 +14173,7 @@ if(!window._pbbIsIOSSafari) {
   }
 
   const steps = [
+    { tab:'profile', sel: '#settings-your-checkin', title:'Choose next week’s workout days', body:'Open Your Check-In in Settings from Friday to Sunday and select next week’s workout days. Your sessions stay in order and your calendar updates when you submit. The change applies to the coming week only.' },
     {tab:'dashboard',sel:'#next-obvious-steps-card',title:'Your welcome is in Inbox',body:'Finish your setup, then open Inbox for your welcome and check-ins from Shannon. Tap Hear from your coach in To Do Next to open the same conversation.'},
     { tab:'movement-tab',sel:'#today-workout-card',condition:()=>window.BalanceFreeStarter?.standardText?.()===true,title:'Your plan and weekly text review',body:'Your membership includes a meal plan, weekly programme updates and a weekly text check-in with Shannon. Finish your setup so Shannon can review it. Voice check-ins and live sessions are separate.' },
     { tab:'profile', sel:'#settings-coaching-support', condition:()=>window.BalanceCoachingSupport?.isEligible()===true, title:'Support that suits you', body:'Choose optional morning messages on saved training days, after-session check-ins, and a gentle or firmer tone. Both switches start off. Weekly check-ins remain; change your choices anytime.' },
@@ -16794,6 +16795,7 @@ window.endFeatureTour = function(skipped){
   // -------------------------------------------------------
 
   var allFeatures = [
+    { id:'weekly-checkin-training-days-20261111', tab:'profile', sel: '#settings-your-checkin', title:'Choose next week’s workout days', body:'Open Your Check-In in Settings from Friday to Sunday and select next week’s workout days. Your sessions stay in order and your calendar updates when you submit. The change applies to the coming week only.' },
     { id:'outreach-support-choices-20261101-v1', tab:'profile', sel:'#settings-coaching-support', condition:()=>window.BalanceCoachingSupport?.isEligible()===true, title:'Support that suits you', body:'Choose optional morning messages on saved training days, after-session check-ins, and a gentle or firmer tone. Both switches start off. Weekly check-ins remain; change your choices anytime.' },
     {id:'weekly-checkin-progress-v1',tab:'home',sel:'.header-msg-icon',title:'Your weekly progress, beside your check-in',body:'Shannon can now attach a dated progress card beneath a text or voice check-in. Open the progress button to compare recorded sets with your next targets. Older cards keep their original targets.'},
     {id:'support-only-checkins-v1',tab:'dashboard',sel:'#next-obvious-steps-card',title:'Your weekly check-ins',body:'Keep your current training. Open Inbox for messages and a short weekly check-in with Shannon. Four weeks free, with no automatic billing.',condition:function(){return !!window.BalanceFreeStarter?.supportOnly?.();}},

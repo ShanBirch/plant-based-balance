@@ -1,3 +1,4 @@
+const trainingDays = require('./_lib/checkin-training-days');
 const learnReview = require('./_lib/learn-action-review');
 const learnAI = require('./_lib/learn-action-ai-review');
 const crypto = require('crypto');
@@ -308,6 +309,7 @@ function responseSummary(response) {
         response.course_learning ? `Course learning: ${response.course_learning}` : 'Course learning: nothing added.',
         response.learn_action_report ? `Saved action evidence: ${JSON.stringify(response.learn_action_report.answers)}${response.learn_action_report.meal ? ' Saved meal: ' + response.learn_action_report.meal.name : ''}` : '',
         response.course_week ? `Learn action week ${response.learn_action?.week || response.course_week}: ${learnActions.experiment(response.learn_action?.week || response.course_week,response.curriculum_version)?.prompt || ''} Action report status: ${response.learn_action?.status || 'not submitted'}. The automatic evidence review records completion only when this action is discussed and its criteria are met.` : '',
+        response.training_days ? `Workout days for ${response.training_days.week_start}: ${response.training_days.days.join(', ')} (coming week only).` : '',
         `Weekly goals: ${goalSummary(response.goals)}`,
     ].filter(Boolean).join('\n');
 }
@@ -371,7 +373,10 @@ exports.handler = async (event) => {
     if (!authUser?.id) return json(401, { error: 'Login required' });
 
     const schedule = await loadInAppCheckinSchedule(authUser.id);
-    if (event.httpMethod === 'GET') return json(200, { ok: true, schedule });
+    if (event.httpMethod === 'GET') {
+        try { const context = await trainingDays.load(supabaseQuery, authUser.id); return json(200, { ok: true, schedule, training_plan: trainingDays.publicPlan(context.plan) }); }
+        catch (_) { return json(200, { ok: true, schedule, training_plan: { available:false, reason:'Your training days could not be loaded. Reopen the check-in to try again.' } }); }
+    }
 
     let body;
     try {
@@ -385,6 +390,7 @@ exports.handler = async (event) => {
         return json(403, { error: 'That check-in is not scheduled for today.' });
     }
 
+    if (body.training_days && body.week_start !== trainingDays.weekKey()) return json(400, { error:'Reopen the current weekly check-in before choosing workout days.' });
     const checked = validatePayload(body);
     if (checked.error) return json(400, { error: checked.error });
     const response = { ...checked.value, occurrence, submitted_at: new Date().toISOString() };
@@ -416,6 +422,11 @@ exports.handler = async (event) => {
         let actionRecord=null;
         if (prepared) {
             response.learn_action_report = prepared.payload?.report || prepared.existing.report;
+        }
+        if (body.training_days) {
+            const context = await trainingDays.load(supabaseQuery, authUser.id);
+            try { response.training_days = trainingDays.selection(context.plan, body.training_days); }
+            catch (error) { return json(409, { error:error.message }); }
         }
         await saveResponse(authUser.id, response);
         if (prepared) {
@@ -472,6 +483,8 @@ exports.handler = async (event) => {
         const receipt = await supabaseQuery(`coach_alerts?select=id,data&id=eq.${encodeURIComponent(alert.alertId)}&limit=1`);
         if (asObject(receipt[0]?.data).activity_snapshot !== summary) throw new Error('Coach review readback did not match');
 
+        if (response.training_days) await trainingDays.save(supabaseQuery, authUser.id, response.training_days);
+
         // Only after delivery is verified. AI failure never undoes a delivered
         // check-in or awards credit; opening the action retries pending reviews.
         if(actionRecord){
@@ -485,6 +498,7 @@ exports.handler = async (event) => {
             deduped: alert.deduped,
             week_start: response.week_start,
             learn_action_status: actionRecord?.status || null,
+            training_days: response.training_days || null,
         });
     } catch (error) {
         console.error('[submit-weekly-checkin] failed:', error.message);
