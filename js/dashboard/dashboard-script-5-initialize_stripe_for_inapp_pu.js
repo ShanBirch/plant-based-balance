@@ -2555,7 +2555,7 @@ function syncWorkoutDayOrderToCloud(order, weeklyEntry = null) {
 function saveWorkoutDayOrder(order) {
     if (getWeeklyWorkoutDayOrder()) {
         const userId = window.currentUser && (window.currentUser.id || window.currentUser.user_id);
-        const entries = { ...(window._pbbWeeklyWorkoutDayOrders?.entries || JSON.parse(localStorage.getItem('pbb_weekly_workout_day_orders:' + userId) || '{}')) };
+        const entries = { ...(window._pbbWeeklyWorkoutDayOrders?.userId === userId ? window._pbbWeeklyWorkoutDayOrders.entries : JSON.parse(localStorage.getItem('pbb_weekly_workout_day_orders:' + userId) || '{}')) };
         const now = new Date(); now.setDate(now.getDate() - (now.getDay()+6)%7);
         const key = getLocalDateString(now);
         const updated = { ...entries[key], order:normalizeWorkoutDayOrder(order) };
