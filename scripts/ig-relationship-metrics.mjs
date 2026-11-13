@@ -10,7 +10,7 @@ export function relationshipMetrics(input) {
   let excluded = 0;
   for (const e of input.events || []) {
     if (!e.canonicalId || !e.personId || !e.reviewId || e.identityVerified !== true ||
-        e.humanMessage !== true || !['in', 'out'].includes(e.direction) ||
+        (e.direction === 'in' ? e.humanMessage !== true : e.deliveryVerified !== true) || !['in', 'out'].includes(e.direction) ||
         e.protected === true || e.reaction === true || e.system === true) { excluded++; continue; }
     const at = Date.parse(e.at);
     if (!Number.isFinite(at) || at < start || at >= end) { excluded++; continue; }
@@ -30,7 +30,7 @@ export function relationshipMetrics(input) {
   const rows = [...people].map(([personId, p]) => {
     const inboundDays = [...p.days].filter(([, d]) => d.in).map(([day]) => day).sort();
     const twoWayDays = [...p.days].filter(([, d]) => d.in && d.out).map(([day]) => day).sort();
-    return { personId, inboundHumanReplies: p.inbound, outboundHumanMessages: p.outbound,
+    return { personId, inboundHumanReplies: p.inbound, outboundVerifiedMessages: p.outbound,
       inboundDays, twoWayDays, repeatAcrossDays: inboundDays.length >= 2,
       sustainedTwoWay: twoWayDays.length >= 3,
       inboundMilestones: [5, 10, 20].filter(n => p.inbound >= n) };

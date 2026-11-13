@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { relationshipMetrics } from '../scripts/ig-relationship-metrics.mjs';
 const event = (id, at, direction = 'in', extra = {}) => ({ canonicalId: id, at, direction,
   personId: 'verified-person', reviewId: 'native-review', identityVerified: true,
-  humanMessage: true, ...extra });
+  humanMessage: true, deliveryVerified: true, ...extra });
 const input = events => ({ window: { start: '2026-11-01T00:00:00Z', end: '2026-12-01T00:00:00Z' }, events });
 test('deduplicates canonical IDs and separates outbound volume from human replies', () => {
   const e = event('one', '2026-11-03T10:00:00Z');
