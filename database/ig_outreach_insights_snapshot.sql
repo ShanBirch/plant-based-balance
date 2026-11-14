@@ -27,6 +27,8 @@ group by i.pid
 select h.id,h.action_id,h.action_version,h.ig_username,h.thread_id,h.receipt,h.completed_at,
 coalesce(nullif(h.receipt->>'observed_at','')::timestamptz,nullif(h.receipt->>'reviewed_at','')::timestamptz,h.completed_at) at
 from ig_next_action_receipts h where action_type='story_reply' and receipt->>'story_id' ~ '^[0-9]+$'
+and terminal_status='completed' and receipt->>'native_verified'='true'
+and receipt->>'story_url'='https://www.instagram.com/stories/'||lower(h.ig_username)||'/'||(receipt->>'story_id')||'/'
 and completed_at>=now()-interval '30 days' and completed_at<now()
 )
 select jsonb_build_object('asOf',now(),'window',jsonb_build_object('start',now()-interval '30 days','end',now()),
