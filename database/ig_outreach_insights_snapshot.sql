@@ -35,4 +35,29 @@ select jsonb_build_object('asOf',now(),'window',jsonb_build_object('start',now()
 'outreachCandidates',(select jsonb_agg(jsonb_build_object('personId',i.pid,'handle',i.handle,'relationshipKind',i.kind,'controls',i.controls,'replyDays',a.reply_days,'inboundMessages',a.inbound,'lastReply',a.latest)) from identities i join activity a on a.pid=i.pid where a.inbound>0),
 'contactProfiles',(select jsonb_agg(jsonb_build_object('personId',pid,'handle',handle,'relationshipKind',kind,'controls',controls,'identityVerified',true,'reviewId','canonical-exact-handle-snapshot-20261115')) from identities),
 'storyObservations',(select jsonb_agg(jsonb_build_object('observationId','receipt:'||s.id,'personId',i.pid,'storyId',s.receipt->>'story_id','observedAt',s.at,'state','present','source','historical_action_receipt','evidenceRef','ig_next_action_receipts:'||s.id)) from stories s join identities i on i.handle=lower(s.ig_username)),
+'ownContentInteractions',(
+select coalesce(jsonb_agg(e),'[]'::jsonb) from (
+ select jsonb_build_object('eventId','viewer:'||v.id,'handle',v.viewer_username,
+ 'contentKey','native-story:'||v.story_id,'contentType','story','at',v.observed_at,
+ 'kind','view','source','native_viewer_snapshot','evidenceRef','ig_story_viewer_observations:'||v.id,
+ 'storyLiked',v.viewer_data->'story_liked','likeEvidence',v.viewer_data->>'story_like_evidence',
+ 'contentDescription',coalesce(c.analysis_summary,s.boundary_evidence->>'story_description',s.boundary_evidence->>'caption'),
+ 'postedAt',s.story_published_at) e
+ from ig_story_viewer_observations v join ig_story_viewer_snapshots s on s.id=v.snapshot_id
+ left join lateral (select ci.analysis_summary from ig_content_items ci
+   where ci.ig_story_id=v.story_id or ci.ig_media_id=v.story_id order by ci.created_at desc limit 1) c on true
+ where v.ig_account='shan_n_sunny' and v.observed_at>=now()-interval '30 days' and v.observed_at<now()
+ union all
+ select jsonb_build_object('eventId','interaction:'||i.id,'handle',coalesce(i.from_username,t.ig_username),
+ 'contentKey','content-item:'||c.id,'contentType',c.content_type,'at',i.received_at,
+ 'kind',case when i.event_type='story_reply' then 'story_reply' else 'post_comment' end,
+ 'source','content_interaction','evidenceRef','ig_content_interactions:'||i.id,
+ 'contentDescription',c.analysis_summary,'postedAt',c.posted_at) e
+ from ig_content_interactions i join ig_content_items c on c.id=i.content_item_id
+ left join ig_threads t on t.id=i.ig_thread_id
+ where i.event_type in ('story_reply','comment') and i.received_at>=now()-interval '30 days' and i.received_at<now()
+ and (t.custom_data->>'bot_account'='shan_n_sunny'
+   or i.raw_payload->'recipient'->>'id'='17841415641641750'
+   or c.raw_payload->>'owner_ig_user_id'='17841415641641750')
+) events),
 'coverage','partial','historicalGaps',jsonb_build_array('Canonical metadata does not establish human authorship, current native identity or complete inbox coverage.','Historical Story action receipts establish observed presence only; receipt time is not publication time.'));

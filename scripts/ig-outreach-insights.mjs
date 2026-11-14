@@ -1,4 +1,5 @@
 // Shared relationship-report extension. Reads evidence; never contacts anyone.
+import {ownContentInsights} from './ig-own-content-insights.mjs';
 const day = at => new Intl.DateTimeFormat('en-CA', {timeZone:'Australia/Brisbane',
   year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(at));
 const handle = value => String(value || '').trim().replace(/^@/, '').toLowerCase();
@@ -40,6 +41,8 @@ export function outreachInsights(input) {
     rows.push(o); observations.set(o.personId, rows);
   }
   const people = [];
+  const ownAudience = ownContentInsights(input);
+  const audienceByHandle = new Map(ownAudience.people.map(p=>[p.handle,p]));
   const candidateIds = new Set();
   for (const c of input.outreachCandidates || []) {
     if (!c.personId || candidateIds.has(c.personId)) throw Error('Missing or duplicate candidate identity');
@@ -103,6 +106,7 @@ export function outreachInsights(input) {
         timingConfidence:exact.length >= 5 ? 'observed_sample' : 'insufficient',
         coverage:'partial_observed_lower_bound'},
       challengeInterest:signal?.kind || 'unknown',
+      ownContent:audienceByHandle.get(handle(p?.handle || c.handle)) || null,
       challengeSource:signal?.sourceMessageId || null,
       rapportTopics:(input.rapportTopics || []).filter(t=>t.personId===c.personId &&
         t.reviewId && t.sourceMessageId && t.nonSensitive === true).map(t=>({
@@ -118,7 +122,7 @@ export function outreachInsights(input) {
   return {schema:'ig_outreach_insights_v1',asOf:new Date(now).toISOString(),
     snapshotAgeHours:Math.max(0,(Date.now()-now)/3600000),
     refreshRequired:Date.now()-now>86400000,
-    window,excludedObservations,topProspects:ranked,
+    window,excludedObservations,topProspects:ranked,ownAudience,
     excludedPeople:people.filter(p=>p.prospectExcluded),
     limitations:['Posting frequency is an observed lower bound, not total Stories per week.',
       'Observation/action time is never publication time. Brisbane hours are not inferred personal time zones.',

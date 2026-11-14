@@ -14,6 +14,18 @@ function cleanText(value = '', maxLength = 2000) {
     return String(value || '').replace(/\s+/g, ' ').trim().slice(0, maxLength);
 }
 
+function canQueueStoryReplyReview(thread = {}) {
+    const c = thread.custom_data || {};
+    const truth = value => value === true || String(value).toLowerCase() === 'true';
+    return thread.auto_send_enabled === true && !thread.linked_user_id
+        && !['in_app', 'paying'].includes(String(thread.lead_stage || '').toLowerCase())
+        && c.outreach_relationship_kind !== 'client'
+        && !['cavazzanafrancesca', 'lara_lessmann'].includes(String(thread.ig_username || '').toLowerCase())
+        && !['manual_only', 'manual_review_only', 'friend_manual_only', 'do_not_follow_up',
+            'blocked_by_shannon', 'opt_out', 'opted_out', 'ai_automation_opt_out',
+            'do_not_contact', 'human_takeover', 'automation_disabled'].some(key => truth(c[key]));
+}
+
 function isInboundStoryReplyMessage({ direction = '', message = {}, contextText = '' } = {}) {
     if (String(direction || '').toLowerCase() !== 'in') return false;
     const story = message?.reply_to?.story;
@@ -45,6 +57,7 @@ function buildStoryReplyAlertData({
     const graph = thread.custom_data?.instagram_graph && typeof thread.custom_data.instagram_graph === 'object'
         ? thread.custom_data.instagram_graph
         : {};
+    const reviewOnly = canQueueStoryReplyReview(thread);
     return {
         channel: 'instagram',
         delivery_channel: 'instagram_native_inbox',
@@ -56,17 +69,17 @@ function buildStoryReplyAlertData({
         linked_user_id: thread.linked_user_id || null,
         manychat_message_id: graphMessageId || null,
         source_message_id: sourceMessageId || null,
-        // Browser delivery is paused under the current customer-service policy.
-        // Keep the native-context requirement, but make the work visible to Shannon.
-        operator_queue: 'needs_you',
+        // Queue review by the existing sole responder. This shell never permits
+        // native sending or API fallback; exact source/context/ownership gates follow.
+        operator_queue: reviewOnly ? 'dm_manager' : 'needs_you',
         browser_story_reply_required: true,
         browser_dispatch_required: false,
-        browser_dispatch_reason: 'browser_dispatch_paused',
+        browser_dispatch_reason: reviewOnly ? 'sole_native_reactive_review' : 'story_reply_independent_hold',
         browser_send_allowed: false,
-        needs_shannon_approval: true,
-        needs_you_required: true,
-        notification_required: true,
-        notification_reason: 'story_context_requires_manual_review',
+        needs_shannon_approval: !reviewOnly,
+        needs_you_required: !reviewOnly,
+        notification_required: !reviewOnly,
+        notification_reason: reviewOnly ? null : 'story_context_requires_manual_review',
         native_story_context_required: true,
         story_id: storyId || null,
         story_url: storyUrl || null,
@@ -128,6 +141,12 @@ async function routeInboundStoryReplyToBrowser({
             `coach_alerts?select=id,status,data&id=eq.${encodeURIComponent(alertId)}&limit=1`
         );
         const currentAlert = Array.isArray(currentAlerts) ? currentAlerts[0] : null;
+        const currentData = currentAlert?.data || {};
+        // Replayed webhooks must not erase an existing human/context hold.
+        if (alert?.deduped === true && (currentData.needs_shannon_approval === true
+            || currentData.operator_queue === 'needs_you' || currentData.operator_queue === 'manual')) {
+            return {alertId, routed: false, outcome: 'existing_alert_hold_preserved', actionId: null};
+        }
         liveAlertData = {
             ...(currentAlert?.data && typeof currentAlert.data === 'object' ? currentAlert.data : {}),
             ...alertData,
@@ -149,6 +168,9 @@ async function routeInboundStoryReplyToBrowser({
                 }
             );
         }
+    }
+    if (!canQueueStoryReplyReview(thread)) {
+        return {alertId, routed: false, outcome: 'story_reply_independent_hold', actionId: null};
     }
     const routed = await query('rpc/route_story_reply_inbound_to_browser_dispatcher', {
         method: 'POST',
@@ -175,6 +197,9 @@ async function routeInboundStoryReplyToBrowser({
                     browser_dispatch_required: false,
                     browser_send_allowed: false,
                     needs_shannon_approval: true,
+                    needs_you_required: true,
+                    notification_required: true,
+                    notification_reason: 'story_reply_route_requires_review',
                 },
             },
             prefer: 'return=minimal',
@@ -193,6 +218,7 @@ async function routeInboundStoryReplyToBrowser({
 module.exports = {
     ROUTED_OUTCOMES,
     buildStoryReplyAlertData,
+    canQueueStoryReplyReview,
     isInboundStoryReplyMessage,
     routeInboundStoryReplyToBrowser,
     storyReplyReference,

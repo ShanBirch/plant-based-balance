@@ -121,6 +121,7 @@ assert.match(migration, /GRANT EXECUTE ON FUNCTION public\.route_story_reply_inb
     const routeResult = await routeInboundStoryReplyToBrowser({
         thread: {
             id: 'thread-1',
+            auto_send_enabled: true,
             coach_id: 'coach-1',
             subscriber_id: 'ig_graph:owner:lead',
             ig_username: 'story_lead',
@@ -161,7 +162,7 @@ assert.match(migration, /GRANT EXECUTE ON FUNCTION public\.route_story_reply_inb
     assert.strictEqual(routeResult.actionId, 'action-1');
     assert.strictEqual(calls[0].idempotencyKey, 'ig_incoming_story_reply:message-1');
     assert.strictEqual(calls[0].payload.suggested_message, null);
-    assert.strictEqual(calls[0].payload.data.operator_queue, 'needs_you');
+    assert.strictEqual(calls[0].payload.data.operator_queue, 'dm_manager');
     assert.strictEqual(calls[0].payload.data.browser_send_allowed, false);
     const routeCall = calls.find(call => call.path === 'rpc/route_story_reply_inbound_to_browser_dispatcher');
     const alertPatch = calls.find(call => call.path?.startsWith('coach_alerts?id='));

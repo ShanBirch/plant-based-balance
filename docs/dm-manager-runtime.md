@@ -25,12 +25,16 @@ manual, client, controller, stale-inbound and no-double-send checks. Use the
 canonical production endpoint, UTF-8 Base64 reply fields, manager source and
 `forceText=true`. Never execute a workspace sender as production code.
 
-Browser dispatch remains paused. Story replies still require native context;
-the compatibility RPC `route_story_reply_inbound_to_browser_dispatcher` now
-routes these to manual Needs You with a visible reason. It preserves active
-claims, newer messages, manual holds and opt-outs. Do not infer authority to
-restart the browser, clear a personal-boundary hold or send generic Story text.
-Other API-window/browser-only work must likewise surface for manual handling.
+Story reply handling was explicitly authorised again in the sole native
+Messenger workflow on 13 and 15 November 2026. Eligible incoming Story replies
+queue through `route_story_reply_inbound_to_browser_dispatcher` for that
+existing responder's exact native Story/context/history review. The webhook
+shell now agrees with the installed database route instead of manufacturing
+a global paused/Needs You hold. It never grants sending permission or uses a
+generic API fallback. Preserve active claims, newer sources, genuine manual,
+client, personal, opt-out, safety, platform and uncertain-delivery holds.
+Views and Story likes alone do not trigger messages. No extra sender or
+historical replay is authorised.
 
 ## New messages needing Shannon
 
