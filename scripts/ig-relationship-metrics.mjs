@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
+import { outreachInsights } from './ig-outreach-insights.mjs';
 
 // Input is reviewed evidence, never unclassified webhook volume.
 export function relationshipMetrics(input) {
@@ -42,11 +43,22 @@ export function relationshipMetrics(input) {
     repeatPeopleAcrossDays: rows.filter(p => p.repeatAcrossDays).length,
     sustainedTwoWayPeople: rows.filter(p => p.sustainedTwoWay).length,
     peopleAt20InboundReplies: rows.filter(p => p.inboundMilestones.includes(20)).length,
-    excludedEvents: excluded, people: rows };
+    excludedEvents: excluded, people: rows,
+    ...(input.outreachCandidates ? {outreach:outreachInsights(input)} : {}) };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const result = relationshipMetrics(JSON.parse(readFileSync(process.argv[2], 'utf8')));
+  const input = JSON.parse(readFileSync(process.argv[2], 'utf8'));
+  if (process.argv[4]) {
+    const snapshot = JSON.parse(readFileSync(process.argv[4], 'utf8'));
+    Object.assign(input, snapshot, {window:input.window, outreachWindow:snapshot.window,
+      events:input.events, coverage:input.coverage, historicalGaps:input.historicalGaps});
+  }
+  if (process.argv[5]) {
+    const observations = readFileSync(process.argv[5],'utf8').split(/\r?\n/).filter(Boolean).map(line=>JSON.parse(line));
+    input.storyObservations = [...(input.storyObservations || []),...observations];
+  }
+  const result = relationshipMetrics(input);
   if (!process.argv[3]) throw new Error('Private output path required');
   writeFileSync(process.argv[3], JSON.stringify(result, null, 2) + '\n');
 }
