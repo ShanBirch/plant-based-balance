@@ -213,3 +213,10 @@ All twelve final video/cover/caption sets were approved by Shannon and scheduled
 Queue proof: .codex-artifacts/balance-month-plan-2026-11-16/meta-final-queue-verification.json and meta-final-queue.txt. Google Photos videos: https://photos.google.com/album/AF1QipP8IBpgKo9jHevvUNcjpbkVwbFv6MAr5PhKLfDR . Covers: https://photos.google.com/album/AF1QipOkbS_NydNmPXyIRsuAhTd-0_9xGqphvsI-p_Iz .
 
 Shannon removed the mandatory Cortex gate. One optional R01 attempt returned Modal submit failed, with no analysis or scores. No retries or other eleven uploads. See content-lab/CORTEX-PREPUBLICATION-GATE.md.
+
+
+## One automatic Trial Reel - 16 November 2026
+
+Shannon explicitly requested checking Trial Reels and publishing one if available, then enabled performance-based automatic sharing. Published R02 Only got twenty minutes? to shan_n_sunny on 16 November 2026 at 17:24:10 Brisbane, via the official Instagram API because the desktop composer has no Trial toggle. Accepted trial_params graduation_strategy SS_PERFORMANCE. Published media ID 18092352287276969; container 18157833511521389; native permalink https://www.instagram.com/reel/Dfyz3dUETxg/ . Published account/caption/custom cover were verified. Readback is_shared_to_feed=false and is_ai_generated=true. Automatic graduation is conditional on Meta performance assessment, not guaranteed at 72 hours.
+
+To prevent a duplicate, moved the original R02 scheduled for 18 November 19:00 into native Meta Drafts and verified it there. Eleven other regular Reel entries remain scheduled on their original dates. No other trial was published. Local evidence: .codex-artifacts/balance-month-plan-2026-11-16/trial-r02-receipt.json, trial-live-proof.jpg, trial-live-thumbnail.jpg and trial-duplicate-in-drafts.jpg. Initial useful performance review: after about 24 hours; record real results without predicting reach.
