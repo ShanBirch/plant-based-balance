@@ -37,6 +37,7 @@ begin
  -- Fixture must otherwise pass all independent holds. This check deliberately fails if it does not.
  if not public.ig_mbs_instagram_requested_message_eligible(a) then raise exception 'Approved request rejected or fixture has an independent hold'; end if;
  if not public.ig_native_reactive_action_eligible(a) then raise exception 'Native requested-message path rejected'; end if;
+ if not public.ig_user_requested_checkin_eligible(a) then raise exception 'Native client-service lane rejected'; end if;
  b:=a; b.owner:='dm_manager';
  if public.ig_mbs_instagram_requested_message_eligible(b) then raise exception 'Automatic owner accepted'; end if;
  b:=a; b.action_type:='reply_inbound';
