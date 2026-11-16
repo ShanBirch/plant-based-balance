@@ -1,5 +1,9 @@
 # Shannon Content Edit Memory
 
+## Optional Cortex review - 16 November 2026
+
+Shannon removed the automatic Cortex publishing rule. Run only the exact Reel and number of tests he explicitly requests; never block approved scheduling or publishing on this optional diagnostic. For the first twelve-Reel monthly batch, only one test of R01 is authorised, without automatic retry or uploads of the other eleven. See content-lab/CORTEX-PREPUBLICATION-GATE.md. This supersedes older mandatory Cortex guidance.
+
 ## 30 October 2026 - FINAL two-layer ABC x approach clarification
 
 Shannon explicitly corrected the design: A/B/C first/second/third reciprocal-conversation timing crossed with BOTH direct challenge and training-first approaches, six concurrent cells. Direct STILL follows genuine Story discussion for a few natural messages, then a transparent invitation; it is not a cold opener or first immediate reply. Fitness-first shares Story rapport before training discussion then invitation. Stable independent per-person approach allocation in all three timing arms; previous mistaken rollouts archived. Identical setup/unknown-goal response and no proactive onboarding price in every cell; later optional paid offer only on case-specific Shannon instruction. See docs/challenge-factorial-abc.md.

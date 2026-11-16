@@ -1,5 +1,9 @@
 # Balance Codex Operating Brief
 
+## Optional Cortex review - 16 November 2026
+
+Shannon removed the automatic Cortex publishing rule. Run only the exact Reel and number of tests he explicitly requests; never block approved scheduling or publishing on this optional diagnostic. For the first twelve-Reel monthly batch, only one test of R01 is authorised, without automatic retry or uploads of the other eleven. See content-lab/CORTEX-PREPUBLICATION-GATE.md. This supersedes older mandatory Cortex guidance.
+
 > 5 November 2026: The [Messenger rapport-first policy](docs/messenger-rapport-first.md) supersedes earlier proactive challenge guidance for default inbound Messenger. Explicit challenge enquiries and existing commitments retain their existing handling.
 
 ## Missed-workout support, 3 November 2026
