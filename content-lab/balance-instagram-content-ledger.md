@@ -189,3 +189,27 @@ Purchases:
 Best derivative:
 Notes:
 ```
+
+
+## First monthly Reel queue - 16 November 2026
+
+All twelve final video/cover/caption sets were approved by Shannon and scheduled in native Meta Business Suite for Instagram shan_n_sunny only. Monday/Wednesday/Friday, 19:00 Australia/Brisbane, 16 November through 11 December 2026. Final native queue readback matched all twelve captions and dates; custom covers were uploaded. Scheduled is not a claim of publication. R01 scheduled post ID 1456648895972472; its missing caption was corrected and verified while retaining 16 November 19:00.
+
+| Date (Brisbane) | Status | Reel | Hook |
+| --- | --- | --- | --- |
+| 2026-11-16 19:00 | SCHEDULED | R01 | Stop waiting for Monday |
+| 2026-11-18 19:00 | SCHEDULED | R02 | Only got twenty minutes? |
+| 2026-11-20 19:00 | SCHEDULED | R05 | Your roster changed. Your plan can too. |
+| 2026-11-23 19:00 | SCHEDULED | R03 | Dinner without the homework |
+| 2026-11-25 19:00 | SCHEDULED | R06 | Meal prep doesn't need five new recipes. |
+| 2026-11-27 19:00 | SCHEDULED | R07 | Start with the protein food, then build the meal. |
+| 2026-11-30 19:00 | SCHEDULED | R04 | Love the session. Hate starting? |
+| 2026-12-02 19:00 | SCHEDULED | R08 | Doing a lot, but still not sure what to do next? |
+| 2026-12-04 19:00 | SCHEDULED | R09 | Watched the form video. Still not sure? |
+| 2026-12-07 19:00 | SCHEDULED | R10 | Is the mirror your only progress check? |
+| 2026-12-09 19:00 | SCHEDULED | R11 | Back after a long break? Don't test your old numbers. |
+| 2026-12-11 19:00 | SCHEDULED | R12 | What actually changes when your week falls apart? |
+
+Queue proof: .codex-artifacts/balance-month-plan-2026-11-16/meta-final-queue-verification.json and meta-final-queue.txt. Google Photos videos: https://photos.google.com/album/AF1QipP8IBpgKo9jHevvUNcjpbkVwbFv6MAr5PhKLfDR . Covers: https://photos.google.com/album/AF1QipOkbS_NydNmPXyIRsuAhTd-0_9xGqphvsI-p_Iz .
+
+Shannon removed the mandatory Cortex gate. One optional R01 attempt returned Modal submit failed, with no analysis or scores. No retries or other eleven uploads. See content-lab/CORTEX-PREPUBLICATION-GATE.md.
