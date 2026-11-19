@@ -3,3 +3,10 @@ Current contact policy, authorised 6 November 2026. Before every proactive Story
 These waits are minimums, not instructions to send. Require a fresh relevant Story and full current history. An ignored invitation, refusal, discomfort or explicit closure remains independently binding. A fourth unanswered proactive attempt stays prohibited. Emoji/media review cannot create reply or enrolment consent.
 
 Measurement: compare eligible repeat outreach, distinct responders and challenge interest against attempts. Watch duplicate/uncertain sends and complaints. Review after seven days, 13 November. Reduced sends are expected from spacing and are not evidence of failure.
+
+
+## Daily Story ceiling — 20 November 2026
+
+Shannon raised the existing sole Story ceiling from30 to50 private Story replies per Australia/Brisbane calendar day. The shared account maximum remains200. Migration `20261120000000_story_daily_cap_50.sql` changes only the existing reservation threshold and cap response; it retains its original advisory lock, exact ownership, receipt counting, archive deduplication and once-only receipt insert. Current usage and unresolved reservations carry forward unchanged.
+
+The private runtime budget projection, current helper aliases/dispatcher, native activation gate and existing ten-minute heartbeat also enforce50. Full historical source/activation protection sets must be restored before native activation. The limit creates no additional sender, rescan, shortlist, contact-spacing exception or forced quota.
