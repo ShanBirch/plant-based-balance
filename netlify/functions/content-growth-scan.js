@@ -5,6 +5,8 @@
  * growth brief the daily content automation can read.
  */
 
+const { buildReelLearning } = require('./_lib/meta-reel-learning');
+
 const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hzapaorxqboevxnumxkv.supabase.co').replace(/\/+$/, '');
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || '';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -168,7 +170,7 @@ function nextMetricsAt(postedAt) {
     return new Date(Date.now() + hours * 36e5).toISOString();
 }
 
-async function upsertPlatformPost(row) {
+async function upsertPlatformPost(row, { discoverOnly = false } = {}) {
     const nowIso = new Date().toISOString();
     const payload = {
         source_key: row.source_key || sourceKey(row.platform, row.platform_post_id),
@@ -190,7 +192,7 @@ async function upsertPlatformPost(row) {
     const rows = await supabaseFetch('content_platform_posts?on_conflict=platform,platform_post_id', {
         method: 'POST',
         body: [payload],
-        prefer: 'resolution=merge-duplicates,return=representation',
+        prefer: `resolution=${discoverOnly ? 'ignore-duplicates' : 'merge-duplicates'},return=representation`,
     });
     return rows[0] || null;
 }
@@ -260,12 +262,8 @@ function instagramMetricsFromRaw(rawPayload = {}) {
     const follows = insightNumber(rawPayload, ['follows'], 0);
     const avgWatchRaw = insightNumber(rawPayload, ['ig_reels_avg_watch_time'], NaN);
     const totalWatchRaw = insightNumber(rawPayload, ['ig_reels_video_view_total_time'], NaN);
-    const avgWatchSeconds = Number.isFinite(avgWatchRaw)
-        ? (avgWatchRaw > 1000 ? avgWatchRaw / 1000 : avgWatchRaw)
-        : null;
-    const watchMinutes = Number.isFinite(totalWatchRaw)
-        ? (totalWatchRaw > 1000 ? totalWatchRaw / 60000 : totalWatchRaw / 60)
-        : null;
+    const avgWatchSeconds = Number.isFinite(avgWatchRaw) ? avgWatchRaw / 1000 : null;
+    const watchMinutes = Number.isFinite(totalWatchRaw) ? totalWatchRaw / 60000 : null;
 
     return {
         views,
@@ -310,7 +308,7 @@ async function syncInstagramPosts(limit = 80) {
                 content_type: item.content_type,
                 media_product_type: item.media_product_type,
             },
-        });
+        }, { discoverOnly: true });
         if (post) synced.push(post);
     }
     return synced;
@@ -362,7 +360,8 @@ async function instagramMetricsForPost(post) {
     const rows = await supabaseFetch(
         `ig_content_items?select=raw_payload&id=eq.${encodeURIComponent(post.content_item_id)}&limit=1`
     );
-    const rawPayload = rows?.[0]?.raw_payload || {};
+    const rawPayload = rows?.[0]?.raw_payload;
+    if (!rawPayload?.latest_graph_synced_at) return null;
     return instagramMetricsFromRaw(rawPayload);
 }
 
@@ -430,9 +429,13 @@ async function youtubeMetricsForPost(post) {
 
 async function duePosts(limit = 40) {
     const nowIso = encodeURIComponent(new Date().toISOString());
-    return supabaseFetch(
-        `content_platform_posts?select=*&status=in.(posted,active,private)&next_metrics_at=lte.${nowIso}&order=next_metrics_at.asc&limit=${Math.max(1, Math.min(100, Number(limit) || 40))}`
-    );
+    const size = Math.max(1, Math.min(100, Number(limit) || 40));
+    const query = `content_platform_posts?select=*&status=in.(posted,active,private)&next_metrics_at=lte.${nowIso}&order=next_metrics_at.asc`;
+    const [reels, other] = await Promise.all([
+        supabaseFetch(`${query}&platform=eq.instagram&metadata->>content_type=eq.reel&limit=${size}`),
+        supabaseFetch(`${query}&limit=${size}`),
+    ]);
+    return [...new Map([...reels, ...other].map(post => [post.id, post])).values()];
 }
 
 async function collectMetricsForPost(post) {
@@ -547,6 +550,22 @@ function platformNotes(rows = []) {
     return notes;
 }
 
+async function reelLearningForLastMonth() {
+    const snapshots = await execSqlJson(`
+        SELECT p.platform_post_id, p.platform_permalink, p.title, p.posted_at, p.content_lane,
+               s.snapshot_at, s.raw_metrics->>'latest_graph_synced_at' AS meta_collected_at, s.reach,
+               s.raw_metrics->'latest_insights' AS insights
+        FROM public.content_metric_snapshots s
+        JOIN public.content_platform_posts p ON p.id = s.platform_post_id
+        WHERE p.platform = 'instagram'
+          AND p.metadata->>'content_type' = 'reel'
+          AND p.posted_at >= NOW() - INTERVAL '30 days'
+          AND s.snapshot_at BETWEEN p.posted_at AND p.posted_at + INTERVAL '8 days'
+        ORDER BY p.posted_at DESC, s.snapshot_at ASC
+    `);
+    return buildReelLearning(snapshots);
+}
+
 async function createGrowthBrief(windowHours = 168) {
     const hours = Math.max(24, Math.min(720, Number(windowHours) || 168));
     const rows = await execSqlJson(`
@@ -587,6 +606,7 @@ async function createGrowthBrief(windowHours = 168) {
         snapshot_at DESC
         LIMIT 40
     `);
+    const reelLearning = await reelLearningForLastMonth().catch(error => ({ error: error.message }));
     const winners = rows.slice(0, 8);
     const recommendations = recommendationFromRows(rows);
     const notes = platformNotes(rows);
@@ -603,7 +623,7 @@ async function createGrowthBrief(windowHours = 168) {
             recommendations,
             winners,
             platform_notes: notes,
-            raw_metrics: { rows },
+            raw_metrics: { rows, meta_reel_learning: reelLearning },
         }],
         prefer: 'return=representation',
     });

@@ -43,3 +43,26 @@ assert.strictEqual(recommendations[0].post_id, 'a');
 assert.strictEqual(_test.rowScore(rows[0]) > _test.rowScore(rows[1]), true);
 
 console.log('content-growth-scan tests passed');
+const { buildReelLearning } = require('../netlify/functions/_lib/meta-reel-learning');
+const testReel = {
+    platform_post_id: 'reel',
+    posted_at: '2026-11-01T00:00:00Z',
+    snapshot_at: '2026-11-04T00:00:00Z',
+    insights: { views: 100, reach: 50, shares: 2, reels_skip_rate: 0, ig_reels_avg_watch_time: 500 },
+};
+const brief = buildReelLearning([
+    { ...testReel, meta_collected_at: '2026-11-01T20:00:00Z', insights: { views: 50 } },
+    { ...testReel, meta_collected_at: '2026-11-02T01:00:00Z' },
+    { ...testReel, meta_collected_at: '2026-11-04T00:00:00Z', insights: { views: 20000 } },
+    { ...testReel, meta_collected_at: '2026-11-08T03:00:00Z', insights: { views: 250, reach: 190 } },
+]);
+const comparison = brief.reels[0].windows;
+assert.strictEqual(comparison['24h'].age_hours, 25);
+assert.strictEqual(comparison['24h'].views, 100);
+assert.strictEqual(comparison['24h'].shares_per_1000_reached, 40);
+assert.strictEqual(comparison['24h'].saves, null);
+assert.strictEqual(comparison['24h'].skip_rate, 0);
+assert.strictEqual(comparison['24h'].average_watch_seconds, 0.5);
+assert.strictEqual(comparison['7d'].views, 250);
+assert.strictEqual(comparison['7d'].shares_per_1000_reached, null);
+assert.deepStrictEqual(buildReelLearning([{ ...testReel, insights: {} }]).reels[0].windows, {});

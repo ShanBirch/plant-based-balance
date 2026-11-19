@@ -22,6 +22,9 @@ Each time this automation wakes up:
 4. Read the latest cross-platform growth brief before selecting or writing the post:
    - Call the deployed `content-growth-scan` function with `action: "latest"`, or query the latest row from `content_growth_briefs` if the function call is unavailable.
    - If no brief exists, run or request a light scan first, then continue with the best available data.
+   - For short training and nutrition Reels, use the 30-day Instagram comparison in the brief's `raw_metrics.meta_reel_learning`. Compare 24-hour snapshots with other 24-hour snapshots, and seven-day snapshots with other seven-day snapshots.
+   - Watch the opening of each example you use. Keep Shannon's full-screen avatar, tight narration, clear captions and roughly one meaningful visual change per second. Change one hook element per iteration and record the change and supporting Reel links in the review pack.
+   - If Meta supplies skip rate without a retention curve, use it to prioritize which Reels to inspect. Read the in-app curve before reporting a drop at a specific second.
    - Also inspect recent rows from `content_platform_posts` and `content_metric_snapshots` when useful, especially the last 7 to 14 days for the scheduled lane.
    - Treat this as internal planning context only. Never mention metrics, dashboards, systems, automation, AI, models, Codex, Gemini, or tools in client/prospect-facing copy.
 5. Use the growth brief to steer the creative choices while keeping the fixed lane schedule intact:
