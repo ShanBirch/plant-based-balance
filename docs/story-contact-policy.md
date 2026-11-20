@@ -10,3 +10,6 @@ Measurement: compare eligible repeat outreach, distinct responders and challenge
 Shannon raised the existing sole Story ceiling from30 to50 private Story replies per Australia/Brisbane calendar day. The shared account maximum remains200. Migration `20261120000000_story_daily_cap_50.sql` changes only the existing reservation threshold and cap response; it retains its original advisory lock, exact ownership, receipt counting, archive deduplication and once-only receipt insert. Current usage and unresolved reservations carry forward unchanged.
 
 The private runtime budget projection, current helper aliases/dispatcher, native activation gate and existing ten-minute heartbeat also enforce50. Full historical source/activation protection sets must be restored before native activation. The limit creates no additional sender, rescan, shortlist, contact-spacing exception or forced quota.
+
+
+The Story reply goal is 50 verified sends per Brisbane day when eligible Stories are available. The reservation ceiling is 51, including unresolved reservations. The shared Instagram ceiling is 200.
