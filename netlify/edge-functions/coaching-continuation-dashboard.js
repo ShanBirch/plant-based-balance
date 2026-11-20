@@ -7,7 +7,7 @@ export default async function handler(request, context) {
     const html = await response.text();
     const headers = new Headers(response.headers);
     for (const name of ["content-length", "content-encoding", "etag", "last-modified"]) headers.delete(name);
-    return new Response(html.replace("</body>", '<script defer src="/js/dashboard/coaching-continuation.js?v=1"></script></body>'), {
+    return new Response(html.replace("</body>", '<script defer src="/js/dashboard/coaching-continuation.js?v=2"></script></body>'), {
         status: response.status,
         headers,
     });
