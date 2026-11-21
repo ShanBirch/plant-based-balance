@@ -1,5 +1,11 @@
 # Shannon Content Edit Memory
 
+## 22 November 2026 — restore the clean Instagram cover family
+
+Shannon rejected the mixed newest cover treatments after comparing them with the older black / cream / black-and-white-photo grid. He confirmed he will supply his own black-and-white photos, while Codex handles the designed posts and Reel covers. Default to near-black with tall condensed cream typography or warm cream with bold black typography, a short centred headline, muted-gold emphasis and a narrow rule, generous negative space, and the actual quiet Balance mark. Remove cover diagrams, subtitle strips, presenter bubbles, heavy footer bands and competing labels. Keep the substantive teaching, human footage and active visual editing inside the video. This feedback changes the cover system, not the approved videos, captions or publication dates.
+
+QA the family together at phone size, including 3:4, 4:5 and square crops. Respect actual ordering and pins; alternating colours cannot guarantee permanent columns. Distinguish prepared replacement files from verified live changes. Preserve a published carousel if its first slide cannot be replaced without reposting. Applies to future ordinary feed covers and the existing monthly Reel queue; a separately requested specialist series can retain its explicit design brief.
+
 ## Optional Cortex review - 16 November 2026
 
 Shannon removed the automatic Cortex publishing rule. Run only the exact Reel and number of tests he explicitly requests; never block approved scheduling or publishing on this optional diagnostic. For the first twelve-Reel monthly batch, only one test of R01 is authorised, without automatic retry or uploads of the other eleven. See content-lab/CORTEX-PREPUBLICATION-GATE.md. This supersedes older mandatory Cortex guidance.

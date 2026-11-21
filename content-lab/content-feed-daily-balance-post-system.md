@@ -2,6 +2,10 @@
 
 This is the canonical operating system for `@shan_n_sunny`.
 
+## Cover direction — 22 November 2026
+
+Use the restored simple black / cream cover family for ordinary designed feed posts and Reels: short centred headline, generous negative space, muted-gold emphasis and rule, quiet actual Balance mark. Near-black covers use tall condensed cream type; warm-cream covers use bold black type. Shannon supplies his own black-and-white photo posts. Do not use video subtitles, presenter bubbles, cover diagrams, heavy footer bands or multiple labels as the default thumbnail. Keep teaching visuals inside the Reel. Preview the cover family at phone size with 3:4, 4:5 and square crops and consider existing pins/order. Read the current `balance-thumbnail-covers` skill and the 22 November entry in `SHANNON-CONTENT-EDIT-MEMORY.md` before producing or scheduling a batch. This supersedes older conflicting ordinary-cover layouts; preserve explicitly requested specialist series briefs.
+
 Last strategy review: 2026-07-28.
 
 Public goal: help plant-based people become fitter, stronger and more consistent.
