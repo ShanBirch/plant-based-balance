@@ -16,7 +16,7 @@
         return result;
     }
 
-    function showGate(auth) {
+    function showGate(auth, preview = false) {
         if (dialog?.open) return;
         dialog = document.createElement("dialog");
         dialog.id = "coaching-continuation-dialog";
@@ -68,6 +68,10 @@
             if (!error) location.reload();
         };
         dialog.querySelector("[data-checkout]").onclick = async event => {
+            if (preview) {
+                dialog.querySelector("[role=status]").textContent = "On Joanne’s account, this opens Stripe Checkout for A$14.99 per week.";
+                return;
+            }
             const button = event.currentTarget;
             openingCheckout = true;
             button.disabled = true;
@@ -93,6 +97,16 @@
                 button.disabled = false;
             }
         };
+        if (preview) {
+            dialog.querySelector("[data-checkout]").disabled = false;
+            dialog.querySelector("[role=status]").textContent = "Coach preview";
+            dialog.querySelector("[data-retry]").onclick = () => {
+                dialog.querySelector("[role=status]").textContent = "Balance checks the subscription when Joanne returns from Stripe.";
+            };
+            const close = dialog.querySelector("[data-signout]");
+            close.textContent = "Close preview";
+            close.onclick = closeGate;
+        }
         document.body.append(dialog);
         dialog.showModal();
     }
@@ -131,6 +145,12 @@
     function initialize() {
         const auth = window.supabaseClient?.auth;
         if (!auth) return;
+        if (window.isAdminViewing) {
+            if (window.currentUser?.id === accountId && new URLSearchParams(location.search).get("preview_renewal") === "1") {
+                showGate(auth, true);
+            }
+            return;
+        }
         check(auth);
         auth.onAuthStateChange(() => setTimeout(() => check(auth), 0));
         window.addEventListener("focus", () => check(auth));
